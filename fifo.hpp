@@ -4,7 +4,7 @@
 // Usable size is FIFO size - 1.
 // FIFO read is blocking if the FIFO is empty.
 // FIFO write is blocking if the FIFO is full.
-constexpr uint16_t FIFO_SIZE = 256;
+constexpr uint16_t FIFO_SIZE = 2048;
 
 constexpr bool BLOCKING_FIFO_WRITE = false;
 constexpr bool BLOCKING_FIFO_READ = true;
@@ -12,7 +12,7 @@ constexpr bool BLOCKING_FIFO_READ = true;
 class SimpleFIFO
 {
 public:
-  SimpleFIFO() {}
+  SimpleFIFO() { head = 0; tail = 0; }
 
   void writeByte( uint8_t value )
   {
