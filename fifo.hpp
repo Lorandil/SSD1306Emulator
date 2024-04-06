@@ -60,6 +60,9 @@ public:
     uint8_t value = buffer[tail];
     tail = ++tail & ( FIFO_SIZE - 1 );
     bytesRead++;
+
+    Serial.print( F("<") ); printHexToSerial( value ); Serial.println( F(">") ); 
+    
     return( value );
   }
 
@@ -78,11 +81,11 @@ public:
   uint32_t getUnderflowCount() { return( underflowCount ); }
 
 protected:
-  uint16_t head{};
-  uint16_t tail{};
-  uint32_t bytesWritten{};
-  uint32_t bytesRead{};
-  uint32_t overflowCount{};
-  uint32_t underflowCount{};
-  uint8_t buffer[FIFO_SIZE];
+  volatile uint16_t head{};
+  volatile uint16_t tail{};
+  volatile uint32_t bytesWritten{};
+  volatile uint32_t bytesRead{};
+  volatile uint32_t overflowCount{};
+  volatile uint32_t underflowCount{};
+  volatile uint8_t buffer[FIFO_SIZE];
 };
