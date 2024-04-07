@@ -83,6 +83,7 @@ void loop()
   uint8_t pageStartAddress{};
   uint8_t pageEndAddress{};
   uint8_t displayOffset{};
+  uint8_t displayStartLine{};
   bool dataMode{};
 
   Serial.println( F("Let's emulate an SSD1306...") );
@@ -116,6 +117,13 @@ void loop()
           columnStartAddressPAM |= (command & 0xf ) << 4;
           Serial.print( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); Serial.println( command & 0x0f );
       }
+      else if (    ( command >= SSD1306Command::SET_DISPLAY_START_LINE )
+                && ( command <= SSD1306Command::SET_DISPLAY_START_LINE + 0x3F )
+              )
+      {
+          displayStartLine = command & 0x3F;
+          Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( displayStartLine ); Serial.println( F(" )" ) ); 
+      }
       else 
       {
         switch( command )
@@ -143,8 +151,13 @@ void loop()
             break;
           }
         /*
-        SET_DISPLAY_START_LINE                = 0x40, // 0x40 - 0x7F
         SET_CONTRAST_CONTROL_FOR_BANK0        = 0x81,
+        */
+        case SSD1306Command::ENABLE_CHARGE_PUMP:
+        {
+          Serial.println( F("ENABLE_CHARGE_PUMP") ); 
+        }
+        /*
         SET_SEGMENT_REMAP                     = 0xA0, // 0xA0/0xA1
         ENTIRE_DISPLAY_ON                     = 0xA4, // 0xA4/0xA5
         SET_NORMAL_DISPLAY                    = 0xA6,

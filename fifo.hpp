@@ -61,7 +61,7 @@ public:
     tail = ++tail & ( FIFO_SIZE - 1 );
     bytesRead++;
 
-    Serial.print( F("<") ); printHexToSerial( value ); Serial.println( F(">") ); 
+    //Serial.print( F("<") ); printHexToSerial( value ); Serial.println( F(">") ); 
     
     return( value );
   }
