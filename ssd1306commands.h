@@ -10,7 +10,7 @@ enum SSD1306Command
   SET_PAGE_ADDRESS                      = 0x22,
   SET_DISPLAY_START_LINE                = 0x40, // 0x40 - 0x7F
   SET_CONTRAST_CONTROL_FOR_BANK0        = 0x81,
-  ENABLE_CHARGE_PUMP                    = 0x8D,
+  CHARGE_PUMP_SETTING                   = 0x8D,
   SET_SEGMENT_REMAP                     = 0xA0, // 0xA0/0xA1
   ENTIRE_DISPLAY_ON                     = 0xA4, // 0xA4/0xA5
   SET_NORMAL_DISPLAY                    = 0xA6,
