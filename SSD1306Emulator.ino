@@ -8,12 +8,18 @@
 #include "fifo.hpp"
 #include "ssd1306commands.h"
 
-SimpleFIFO<uint8_t> fifoCommand;
-SimpleFIFO<uint8_t> fifoData;
-SimpleFIFO<uint16_t> fifoNextOp;
+#include <PicoDVI.h> // Core display & graphics library
 
-constexpr uint8_t TYPE_COMMAND = 0x00;
-constexpr uint8_t TYPE_DATA    = 0x80;
+// 320x240 16-bit color display (to match common TFT display resolution):
+DVIGFX16 display(DVI_RES_320x240p60, pico_sock_cfg);
+
+
+SimpleFIFO<uint16_t> fifo;
+
+constexpr uint16_t TYPE_COMMAND = 0x0000;
+constexpr uint16_t TYPE_DATA    = 0x8000;
+constexpr uint16_t DATA_MASK   = 0x00ff;
+constexpr uint16_t TYPE_MASK   = 0x8000;
 
 static char frameBuffer[1024];
  
@@ -30,24 +36,20 @@ void I2C_RxHandler( int numBytes )
       {
         while( Wire.available() )
         {
-          fifoCommand.writeValue( uint8_t( Wire.read() ) );
-          fifoNextOp.writeValue( TYPE_COMMAND );
+          fifo.writeValue( uint8_t( Wire.read() ) | TYPE_COMMAND );
         }
       }
       else
       {
         while( Wire.available() )
         {
-          fifoCommand.writeValue( uint8_t( Wire.read() ) );
-          fifoNextOp.writeValue( TYPE_DATA );
+          fifo.writeValue( uint8_t( Wire.read() ) | TYPE_DATA );
         }
       }
     }
     
-    // signal if any FIFO detected an overflow
-    if ( fifoCommand.isOverflow() ) { digitalWrite( LED_BUILTIN, true ); }
-    if ( fifoData.isOverflow() ) { digitalWrite( LED_BUILTIN, true ); }
-    if ( fifoNextOp.isOverflow() ) { digitalWrite( LED_BUILTIN, true ); }
+    // signal if FIFO detected an overflow
+    if ( fifo.isOverflow() ) { digitalWrite( LED_BUILTIN, true ); }
   }
 }
  
@@ -62,11 +64,14 @@ void setup()
 
   Serial.begin( 115200 );
   
+  if (!display.begin()) { // Blink LED if insufficient RAM
+    pinMode(LED_BUILTIN, OUTPUT);
+    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
+  }
+  
   delay( 5000 );
 
-  fifoCommand.clear();
-  fifoData.clear();
-  fifoNextOp.clear();
+  fifo.clear();
 
   // no overflow so far
   digitalWrite( LED_BUILTIN, false );
@@ -75,6 +80,16 @@ void setup()
 /*---------------------------------------------------------------------------*/
 void loop()
 {
+  for ( int y = 0; y < display.height(); y++ )
+  {
+    for ( int x = 0; x < 256; x++ )
+    {
+      display.drawPixel(x + 32, y, y * display.width() + x );
+    }
+  }
+
+
+
   uint8_t count{};
   uint8_t columnStartAddressPAM{};
   uint8_t addressingMode{};
@@ -89,22 +104,22 @@ void loop()
 
   Serial.println( F("Let's emulate an SSD1306...") );
 
-  Serial.print( F("FIFO fill count = ") ); Serial.println( fifoNextOp.fillCount() );
-  Serial.print( F("FIFO free count = ") ); Serial.println( fifoNextOp.freeCount() );
-  Serial.print( F("isEmpty = ") ); Serial.println( fifoNextOp.isEmpty() );
-  Serial.print( F("isFull = ") ); Serial.println( fifoNextOp.isFull() );
+  Serial.print( F("FIFO fill count = ") ); Serial.println( fifo.fillCount() );
+  Serial.print( F("FIFO free count = ") ); Serial.println( fifo.freeCount() );
+  Serial.print( F("isEmpty = ") ); Serial.println( fifo.isEmpty() );
+  Serial.print( F("isFull = ") ); Serial.println( fifo.isFull() );
 
-  while ( count++ < 30 )
+  while ( count++ < 65536 )
   {
     hexdumpResetPositionCount();
 
-    while( fifoNextOp.isEmpty() );
+    while( fifo.isEmpty() );
 
-    bool isCommand = ( fifoNextOp.readValue() == 0 );
+    auto value = fifo.readValue();
 
-    if ( isCommand )
+    if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
     {
-      uint8_t command = fifoCommand.readValue();
+      uint8_t command = uint8_t( value );
 
       Serial.print( F("Command = ") ); printHexToSerial( command ); Serial.print( F(" -> ") );
 
@@ -126,6 +141,12 @@ void loop()
       {
           displayStartLine = command & 0x3F;
           Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( displayStartLine ); Serial.println( F(" )" ) ); 
+      }
+      else if (    ( command >= SSD1306Command::SET_PAGE_START_ADDRESS )        // 0xB0
+                && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
+              )
+      {
+        
       }
       else 
       {
@@ -198,10 +219,6 @@ void loop()
             Serial.println( command == SSD1306Command::SET_NORMAL_DISPLAY ? F("SET_NORMAL_DISPLAY") : F("SET_INVERSE_DISPLAY") );
             break;
           }
-        /*
-        SET_NORMAL_DISPLAY                    = 0xA6,
-        SET_INVERSE_DISPLAY                   = 0xA7,
-        */
           case SSD1306Command::SET_MULTIPLEX_RATIO: // 0xA8
           {
             Serial.print( F("SET_MULTIPLEX_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
@@ -246,9 +263,6 @@ void loop()
             Serial.print( F("SET_VCOMH_DESELECT_LEVEL( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
             break;
           }
-        /*
-        SET_PAGE_START_ADDRESS                = 0xB0, // 0xB0 - 0xB7
-        */
           case SSD1306Command::NOP: // 0xE3
           {
             Serial.println( F("NOP") );
@@ -264,7 +278,7 @@ void loop()
     }
     else
     {
-      Serial.print( F("  received data byte ") ); printHexToSerial( readDataByte() ); Serial.println();
+      Serial.print( F("  received data byte ") ); printHexToSerial( uint8_t( value ) ); Serial.println();
     }
 
     //if ( fifo.isOverflow() ) { Serial.print( F("*** Overflow detected! (") ); Serial.print( fifo.getOverflowCount() ); Serial.println( F(" bytes lost) *** ") ); }
@@ -277,11 +291,13 @@ void loop()
 /*---------------------------------------------------------------------------*/
 uint8_t readCommandByte()
 {
-  if ( !fifoCommand.isEmpty() )
+  if ( !fifo.isEmpty() )
   {
-    if ( fifoNextOp.readValue() == TYPE_COMMAND )
+    auto value = fifo.readValue();
+
+    if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
     {
-      return( fifoCommand.readValue() );
+      return( uint8_t( value ) );
     }
     Serial.println( F("*** Command expected!") );
   }
@@ -296,11 +312,13 @@ uint8_t readCommandByte()
 /*---------------------------------------------------------------------------*/
 uint8_t readDataByte()
 {
-  if ( !fifoData.isEmpty() )
+  if ( !fifo.isEmpty() )
   {
-    if ( fifoNextOp.readValue() == TYPE_DATA )
+    auto value = fifo.readValue();
+
+    if ( ( value & TYPE_MASK ) == TYPE_DATA )
     {
-      return( fifoData.readValue() );
+      return( uint8_t( value ) );
     }
     Serial.println( F("*** Data expected!") );
   }
