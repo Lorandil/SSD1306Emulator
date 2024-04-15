@@ -18,8 +18,24 @@ SimpleFIFO<uint16_t> fifo;
 
 constexpr uint16_t TYPE_COMMAND = 0x0000;
 constexpr uint16_t TYPE_DATA    = 0x8000;
-constexpr uint16_t DATA_MASK   = 0x00ff;
-constexpr uint16_t TYPE_MASK   = 0x8000;
+constexpr uint16_t DATA_MASK    = 0x00ff;
+constexpr uint16_t TYPE_MASK    = 0x8000;
+
+uint8_t count{};
+uint8_t columnStartAddressPAM{};
+uint8_t addressingMode{};
+uint8_t segmentRemap{};
+uint8_t columnStartAddress{};
+uint8_t columnEndAddress{};
+uint8_t pageStartAddress{};
+uint8_t pageEndAddress{};
+uint8_t displayOffset{};
+uint8_t displayStartLine{};
+uint8_t scrollMode{};
+// running counters
+uint8_t page{};
+uint8_t column{};
+
 
 static char frameBuffer[1024];
  
@@ -88,20 +104,6 @@ void loop()
     }
   }
 
-
-
-  uint8_t count{};
-  uint8_t columnStartAddressPAM{};
-  uint8_t addressingMode{};
-  uint8_t segmentRemap{};
-  uint8_t columnStartAddress{};
-  uint8_t columnEndAddress{};
-  uint8_t pageStartAddress{};
-  uint8_t pageEndAddress{};
-  uint8_t displayOffset{};
-  uint8_t displayStartLine{};
-  uint8_t scrollMode{};
-
   Serial.println( F("Let's emulate an SSD1306...") );
 
   Serial.print( F("FIFO fill count = ") ); Serial.println( fifo.fillCount() );
@@ -146,7 +148,9 @@ void loop()
                 && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
               )
       {
-        
+        page = command & 0x07;
+        Serial.print( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( page ); Serial.println( F(" )" ) );
+        break;
       }
       else 
       {
@@ -156,7 +160,7 @@ void loop()
           {
             addressingMode = readCommandByte() & 0x03;
             Serial.print( F("SET_MEMORY_ADDRESSING_MODE( ") ); 
-            Serial.print( addressingMode == 0x00 ? F("horizontal") : ( addressingMode == 0x01 ? F("page") : F("vertical") ) );
+            Serial.print( addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ? F("horizontal") : ( addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
             Serial.println( F(" )") );
             break;
           }
@@ -278,11 +282,20 @@ void loop()
     }
     else
     {
-      Serial.print( F("  received data byte ") ); printHexToSerial( uint8_t( value ) ); Serial.println();
+      //Serial.print( F("  received data byte ") ); printHexToSerial( uint8_t( value ) ); Serial.println();
+      writePixels( value );
     }
 
-    //if ( fifo.isOverflow() ) { Serial.print( F("*** Overflow detected! (") ); Serial.print( fifo.getOverflowCount() ); Serial.println( F(" bytes lost) *** ") ); }
-    //if ( fifo.isUnderflow() ) { Serial.println( F("*** Underflow detected! *** ") ); }
+    for ( int y = 0; y < SSD1306Command::DISPLAY_HEIGHT; y++ )
+    {
+      for ( int x = 0; x < SSD1306Command::DISPLAY_WIDTH; x++ )
+      {
+        uint16_t offsetY = y >> 3;
+        bool pixelValue = ( ( frameBuffer[x + offsetY * SSD1306Command::DISPLAY_WIDTH] & ( 1 << ( y & 0x07 ) ) ) != 0 );
+        display.drawPixel(x + 32 + 64, y + 80, pixelValue ? 0xFFFF : 0x0000 );
+      }
+    }
+    
   }
 
   while( true );
@@ -328,4 +341,48 @@ uint8_t readDataByte()
   }
 
   return( 0 );
+}
+
+/*---------------------------------------------------------------------------*/
+void writePixels( uint8_t pixels )
+{
+  // store pixels into frame buffer
+  frameBuffer[column + page * SSD1306Command::DISPLAY_WIDTH] = pixels;
+  switch( addressingMode )
+  {
+    case SSD1306Command::HORIZONTAL_ADDRESSING_MODE:
+      // advance column
+      column++;
+      if ( column >= SSD1306Command::DISPLAY_WIDTH )
+      {
+        // return to first column and go to next page
+        column = 0;
+        page++;
+        if ( page >= 0x08 )
+        {
+          page = 0x00;
+        }
+      }
+      break;
+    case SSD1306Command::VERTICAL_ADDRESSING_MODE:
+      // advance page
+      page++;
+      if ( page >= 8 )
+      {
+        // return to first page, go to next column
+        page = 0;
+        column = ( ( column++ ) & ( SSD1306Command::DISPLAY_WIDTH - 1 ) );
+      }
+      break;
+    case SSD1306Command::PAGE_ADDRESSING_MODE:
+    default:
+      // limit column to screen width
+      column++;
+      if ( column >= SSD1306Command::DISPLAY_WIDTH )
+      { 
+        column = 0;
+      }
+      break;
+  }
+  Serial.print( F("column = ") ); Serial.print( column ); Serial.print( F(", page = ") ); Serial.println( page );
 }

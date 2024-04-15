@@ -37,4 +37,11 @@ enum SSD1306Command
   ACTIVATE_SCROLL                                    = 0x2F,
   SET_VERTICAL_SCROLL_AREA                           = 0xA3, // three byte command
 
+
+  HORIZONTAL_ADDRESSING_MODE                         = 0x00,
+  VERTICAL_ADDRESSING_MODE                           = 0x01,
+  PAGE_ADDRESSING_MODE                               = 0x02,
+
+  DISPLAY_WIDTH                                      = 128,
+  DISPLAY_HEIGHT                                     = 64,
 };
