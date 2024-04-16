@@ -32,6 +32,8 @@ uint8_t pageEndAddress{};
 uint8_t displayOffset{};
 uint8_t displayStartLine{};
 uint8_t scrollMode{};
+bool    forceDisplayOn{true};
+bool    invertDisplay{false};
 // running counters
 uint8_t page{};
 uint8_t column{};
@@ -96,13 +98,7 @@ void setup()
 /*---------------------------------------------------------------------------*/
 void loop()
 {
-  for ( int y = 0; y < display.height(); y++ )
-  {
-    for ( int x = 0; x < 256; x++ )
-    {
-      display.drawPixel(x + 32, y, y * display.width() + x );
-    }
-  }
+  renderBackground();
 
   Serial.println( F("Let's emulate an SSD1306...") );
 
@@ -111,194 +107,190 @@ void loop()
   Serial.print( F("isEmpty = ") ); Serial.println( fifo.isEmpty() );
   Serial.print( F("isFull = ") ); Serial.println( fifo.isFull() );
 
-  while ( count++ < 65536 )
+  while ( true )
   {
-    hexdumpResetPositionCount();
 
-    while( fifo.isEmpty() );
-
-    auto value = fifo.readValue();
-
-    if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
+    if ( !fifo.isEmpty() )
     {
-      uint8_t command = uint8_t( value );
+      hexdumpResetPositionCount();
 
-      Serial.print( F("Command = ") ); printHexToSerial( command ); Serial.print( F(" -> ") );
+      auto value = fifo.readValue();
 
-      if ( command <= SSD1306Command::SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
+      if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
       {
-        columnStartAddressPAM &= 0xf0;
-        columnStartAddressPAM |= command & 0xf;
-        Serial.print( F("SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - low nibble = ") ); Serial.println( command & 0x0f );
-      }
-      else if ( command <= SSD1306Command::SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
-      {
-          columnStartAddressPAM &= 0x0f;
-          columnStartAddressPAM |= (command & 0xf ) << 4;
-          Serial.print( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); Serial.println( command & 0x0f );
-      }
-      else if (    ( command >= SSD1306Command::SET_DISPLAY_START_LINE )
-                && ( command <= SSD1306Command::SET_DISPLAY_START_LINE + 0x3F )
-              )
-      {
-          displayStartLine = command & 0x3F;
-          Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( displayStartLine ); Serial.println( F(" )" ) ); 
-      }
-      else if (    ( command >= SSD1306Command::SET_PAGE_START_ADDRESS )        // 0xB0
-                && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
-              )
-      {
-        page = command & 0x07;
-        Serial.print( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( page ); Serial.println( F(" )" ) );
-        break;
-      }
-      else 
-      {
-        switch( command )
+        uint8_t command = uint8_t( value );
+
+        Serial.print( F("Command = ") ); printHexToSerial( command ); Serial.print( F(" -> ") );
+
+        if ( command <= SSD1306Command::SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
         {
-          case SSD1306Command::SET_MEMORY_ADDRESSING_MODE:  // 0x20
+          columnStartAddressPAM &= 0xf0;
+          columnStartAddressPAM |= command & 0xf;
+          Serial.print( F("SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - low nibble = ") ); Serial.println( command & 0x0f );
+        }
+        else if ( command <= SSD1306Command::SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
+        {
+            columnStartAddressPAM &= 0x0f;
+            columnStartAddressPAM |= (command & 0xf ) << 4;
+            Serial.print( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); Serial.println( command & 0x0f );
+        }
+        else if (    ( command >= SSD1306Command::SET_DISPLAY_START_LINE )
+                  && ( command <= SSD1306Command::SET_DISPLAY_START_LINE + 0x3F )
+                )
+        {
+            displayStartLine = command & 0x3F;
+            Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( displayStartLine ); Serial.println( F(" )" ) ); 
+        }
+        else if (    ( command >= SSD1306Command::SET_PAGE_START_ADDRESS )        // 0xB0
+                  && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
+                )
+        {
+          page = command & 0x07;
+          Serial.print( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( page ); Serial.println( F(" )" ) );
+          break;
+        }
+        else 
+        {
+          switch( command )
           {
-            addressingMode = readCommandByte() & 0x03;
-            Serial.print( F("SET_MEMORY_ADDRESSING_MODE( ") ); 
-            Serial.print( addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ? F("horizontal") : ( addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
-            Serial.println( F(" )") );
-            break;
-          }
-          case SSD1306Command::SET_COLUMN_ADDRESS:  // 0x21
-          {
-            columnStartAddress = readCommandByte();
-            columnEndAddress = readCommandByte();
-            Serial.print( F("SET_COLUMN_ADDRESS - startAddress = ") ); Serial.print( columnStartAddress );
-            Serial.print( F(", endAddress = ") ); Serial.println( columnEndAddress );
-            break;
-          }
-          case SSD1306Command::SET_PAGE_ADDRESS:  // 0x22
-          {
-            pageStartAddress = readCommandByte();
-            pageEndAddress = readCommandByte();
-            Serial.print( F("SET_PAGE_ADDRESS - startAddress = ") ); Serial.print( pageStartAddress );
-            Serial.print( F(", endAddress = ") ); Serial.println( pageEndAddress );
-            break;
-          }
-          case SSD1306Command::DEACTIVATE_SCROLL: // 0x2E
-          {
-            Serial.println( F("DEACTIVATE_SCROLL") );
-            scrollMode = 0;
-            break;
-          }
-          case SSD1306Command::SET_CONTRAST_CONTROL_FOR_BANK0:  // 0x81
-          {
-            Serial.print( F("SET_CONTRAST_CONTROL_FOR_BANK0( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::CHARGE_PUMP_SETTING:
-          {
-            uint8_t mode = readCommandByte();
-            Serial.print( F("CHARGE_PUMP_SETTING( ") ); Serial.print( mode == 0x10 ? F("EXTERNALVCC") : F("ENABLE_CHARGE_PUMP") ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_SEGMENT_REMAP:
-          {
-            Serial.println( F("SET_SEGMENT_REMAP( 0 )") );
-            segmentRemap = 0;
-            break;
-          }
-          case SSD1306Command::SET_SEGMENT_REMAP + 1:
-          {
-            Serial.println( F("SET_SEGMENT_REMAP( 127 )") );
-            segmentRemap = 127;
-            break;
-          }
-          case SSD1306Command::ENTIRE_DISPLAY_ON:     // 0xA4
-          case SSD1306Command::ENTIRE_DISPLAY_ON + 1: // 0xA5
-          {
-            // no idea what's the difference...
-            Serial.print( F("ENTIRE_DISPLAY_ON( ") ); Serial.print( command == SSD1306Command::ENTIRE_DISPLAY_ON ? F("normal") : F("always") ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_NORMAL_DISPLAY:    // 0xA6
-          case SSD1306Command::SET_INVERSE_DISPLAY:   // 0xA7
-          {
-            // no idea what's the difference...
-            Serial.println( command == SSD1306Command::SET_NORMAL_DISPLAY ? F("SET_NORMAL_DISPLAY") : F("SET_INVERSE_DISPLAY") );
-            break;
-          }
-          case SSD1306Command::SET_MULTIPLEX_RATIO: // 0xA8
-          {
-            Serial.print( F("SET_MULTIPLEX_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_DISPLAY_OFF: // 0xAE
-          case SSD1306Command::SET_DISPLAY_ON:  // 0xAF
-          {
-            Serial.println( command == SSD1306Command::SET_DISPLAY_OFF ? F("SET_DISPLAY_OFF") : F("SET_DISPLAY_ON") );
-            break;
-          }
-          case SSD1306Command::SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL:  // 0xC0
-          case SSD1306Command::SET_COM_OUTPUT_SCAN_DIRECTION_FLIPPED: // 0xC8
-          {
-            Serial.println( command == SET_DISPLAY_OFF ? F("SET_DISPLAY_OFF") : F("SET_DISPLAY_ON") );
-            break;
-          }
-          case SSD1306Command::SET_DISPLAY_OFFSET:              // 0xD3
-          {
-            // read oofset parameter
-            displayOffset = readCommandByte();
-            Serial.print( F("SET_DISPLAY_OFFSET( ") ); printHexToSerial( displayOffset ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_DISPLAY_CLOCK_DIVIDE_RATIO:  // 0xD5
-          {
-            Serial.print( F("SET_DISPLAY_CLOCK_DIVIDE_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_COM_PINS_HARDWARE_CONFIGURATION: // 0xDA,
-          {
-            Serial.print( F("SET_COM_PINS_HARDWARE_CONFIGURATION( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_PRECHARGE_PERIOD: // 0xD9
-          {
-            Serial.print( F("SET_PRECHARGE_PERIOD( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::SET_VCOMH_DESELECT_LEVEL: // 0xDB
-          {
-            Serial.print( F("SET_VCOMH_DESELECT_LEVEL( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
-            break;
-          }
-          case SSD1306Command::NOP: // 0xE3
-          {
-            Serial.println( F("NOP") );
-            break;
-          }
-          default:
-          {
-            Serial.println( F("*** unknown command ***" ) );
-            break;
+            case SSD1306Command::SET_MEMORY_ADDRESSING_MODE:  // 0x20
+            {
+              addressingMode = readCommandByte() & 0x03;
+              Serial.print( F("SET_MEMORY_ADDRESSING_MODE( ") ); 
+              Serial.print( addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ? F("horizontal") : ( addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
+              Serial.println( F(" )") );
+              break;
+            }
+            case SSD1306Command::SET_COLUMN_ADDRESS:  // 0x21
+            {
+              columnStartAddress = readCommandByte();
+              columnEndAddress = readCommandByte();
+              Serial.print( F("SET_COLUMN_ADDRESS - startAddress = ") ); Serial.print( columnStartAddress );
+              Serial.print( F(", endAddress = ") ); Serial.println( columnEndAddress );
+              break;
+            }
+            case SSD1306Command::SET_PAGE_ADDRESS:  // 0x22
+            {
+              pageStartAddress = readCommandByte();
+              pageEndAddress = readCommandByte();
+              Serial.print( F("SET_PAGE_ADDRESS - startAddress = ") ); Serial.print( pageStartAddress );
+              Serial.print( F(", endAddress = ") ); Serial.println( pageEndAddress );
+              break;
+            }
+            case SSD1306Command::DEACTIVATE_SCROLL: // 0x2E
+            {
+              Serial.println( F("DEACTIVATE_SCROLL") );
+              scrollMode = 0;
+              break;
+            }
+            case SSD1306Command::SET_CONTRAST_CONTROL_FOR_BANK0:  // 0x81
+            {
+              Serial.print( F("SET_CONTRAST_CONTROL_FOR_BANK0( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::CHARGE_PUMP_SETTING:
+            {
+              uint8_t mode = readCommandByte();
+              Serial.print( F("CHARGE_PUMP_SETTING( ") ); Serial.print( mode == 0x10 ? F("EXTERNALVCC") : F("ENABLE_CHARGE_PUMP") ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::SET_SEGMENT_REMAP:
+            {
+              Serial.println( F("SET_SEGMENT_REMAP( 0 )") );
+              segmentRemap = 0;
+              break;
+            }
+            case SSD1306Command::SET_SEGMENT_REMAP + 1:
+            {
+              Serial.println( F("SET_SEGMENT_REMAP( 127 )") );
+              segmentRemap = 127;
+              break;
+            }
+            case SSD1306Command::ENTIRE_DISPLAY_ON:     // 0xA4
+            case SSD1306Command::ENTIRE_DISPLAY_ON + 1: // 0xA5
+            {
+              // no idea what's the difference...
+              Serial.print( F("ENTIRE_DISPLAY_ON( ") ); Serial.print( command == SSD1306Command::ENTIRE_DISPLAY_ON ? F("normal") : F("forceOn") ); Serial.println( F(" )" ) );
+              forceDisplayOn = ( command == 0xA5 );
+              break;
+            }
+            case SSD1306Command::SET_NORMAL_DISPLAY:    // 0xA6
+            case SSD1306Command::SET_INVERSE_DISPLAY:   // 0xA7
+            {
+              // no idea what's the difference...
+              Serial.println( command == SSD1306Command::SET_NORMAL_DISPLAY ? F("SET_NORMAL_DISPLAY") : F("SET_INVERSE_DISPLAY") );
+              break;
+            }
+            case SSD1306Command::SET_MULTIPLEX_RATIO: // 0xA8
+            {
+              Serial.print( F("SET_MULTIPLEX_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::SET_DISPLAY_OFF: // 0xAE
+            case SSD1306Command::SET_DISPLAY_ON:  // 0xAF
+            {
+              Serial.println( command == SSD1306Command::SET_DISPLAY_OFF ? F("SET_DISPLAY_OFF") : F("SET_DISPLAY_ON") );
+              break;
+            }
+            case SSD1306Command::SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL:  // 0xC0
+            case SSD1306Command::SET_COM_OUTPUT_SCAN_DIRECTION_FLIPPED: // 0xC8
+            {
+              Serial.println( command == SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL ? F("SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL") : F("SET_COM_OUTPUT_SCAN_DIRECTION_FLIPPED") );
+              break;
+            }
+            case SSD1306Command::SET_DISPLAY_OFFSET:              // 0xD3
+            {
+              // read oofset parameter
+              displayOffset = readCommandByte();
+              Serial.print( F("SET_DISPLAY_OFFSET( ") ); printHexToSerial( displayOffset ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::SET_DISPLAY_CLOCK_DIVIDE_RATIO:  // 0xD5
+            {
+              Serial.print( F("SET_DISPLAY_CLOCK_DIVIDE_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::SET_COM_PINS_HARDWARE_CONFIGURATION: // 0xDA,
+            {
+              Serial.print( F("SET_COM_PINS_HARDWARE_CONFIGURATION( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::SET_PRECHARGE_PERIOD: // 0xD9
+            {
+              Serial.print( F("SET_PRECHARGE_PERIOD( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::SET_VCOMH_DESELECT_LEVEL: // 0xDB
+            {
+              Serial.print( F("SET_VCOMH_DESELECT_LEVEL( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+              break;
+            }
+            case SSD1306Command::NOP: // 0xE3
+            {
+              Serial.println( F("NOP") );
+              break;
+            }
+            default:
+            {
+              Serial.println( F("*** unknown command ***" ) );
+              break;
+            }
           }
         }
       }
-    }
-    else
-    {
-      //Serial.print( F("  received data byte ") ); printHexToSerial( uint8_t( value ) ); Serial.println();
-      writePixels( value );
-    }
-
-    for ( int y = 0; y < SSD1306Command::DISPLAY_HEIGHT; y++ )
-    {
-      for ( int x = 0; x < SSD1306Command::DISPLAY_WIDTH; x++ )
+      else
       {
-        uint16_t offsetY = y >> 3;
-        bool pixelValue = ( ( frameBuffer[x + offsetY * SSD1306Command::DISPLAY_WIDTH] & ( 1 << ( y & 0x07 ) ) ) != 0 );
-        display.drawPixel(x + 32 + 64, y + 80, pixelValue ? 0xFFFF : 0x0000 );
+        // write 8 pixels to RAM buffer and increment column and page according to addressing mode
+        writePixels( value );
       }
     }
-    
-  }
 
-  while( true );
+    // render the screen all 1000 cycles
+    if ( ( count++ % 1000 ) == 0 )
+    {
+      renderScreen();
+    }
+  }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -371,7 +363,11 @@ void writePixels( uint8_t pixels )
       {
         // return to first page, go to next column
         page = 0;
-        column = ( ( column++ ) & ( SSD1306Command::DISPLAY_WIDTH - 1 ) );
+        column++;
+        if ( column >= SSD1306Command::DISPLAY_WIDTH )
+        {
+          column = 0;
+        }
       }
       break;
     case SSD1306Command::PAGE_ADDRESSING_MODE:
@@ -384,5 +380,33 @@ void writePixels( uint8_t pixels )
       }
       break;
   }
-  Serial.print( F("column = ") ); Serial.print( column ); Serial.print( F(", page = ") ); Serial.println( page );
+  //Serial.print( F("column = ") ); Serial.print( column ); Serial.print( F(", page = ") ); Serial.println( page );
+}
+
+/*---------------------------------------------------------------------------*/
+void renderBackground()
+{
+  for ( int y = 0; y < display.height(); y++ )
+  {
+    for ( int x = 0; x < display.width(); x++ )
+    {
+      display.drawPixel(x, y, y * display.width() + x );
+    }
+  }
+}
+
+/*---------------------------------------------------------------------------*/
+// Render the screen in the selected style (just 1:1 for now)
+void renderScreen()
+{
+  for ( int y = 0; y < 2 * SSD1306Command::DISPLAY_HEIGHT; y++ )
+  {
+    for ( int x = 0; x < 2 * SSD1306Command::DISPLAY_WIDTH; x++ )
+    {
+      uint16_t offsetY = y >> 4;
+      bool pixelValue = ( ( frameBuffer[( x / 2 ) + offsetY * SSD1306Command::DISPLAY_WIDTH] & ( 1 << ( ( y / 2 ) & 0x07 ) ) ) != 0 ) | forceDisplayOn;
+      pixelValue ^= invertDisplay;
+      display.drawPixel(x + 32, y + 48, pixelValue ? 0xFFFF : 0x0000 );
+    }
+  }
 }
