@@ -21,18 +21,32 @@ constexpr uint16_t TYPE_DATA    = 0x8000;
 constexpr uint16_t DATA_MASK    = 0x00ff;
 constexpr uint16_t TYPE_MASK    = 0x8000;
 
-uint8_t count{};
-uint8_t columnStartAddressPAM{};
-uint8_t addressingMode{};
-uint8_t segmentRemap{};
-uint8_t columnStartAddress{};
-uint8_t columnEndAddress{};
-uint8_t pageStartAddress{};
-uint8_t pageEndAddress{};
-uint8_t displayOffset{};
-uint8_t displayStartLine{};
-uint8_t scrollMode{};
-bool    forceDisplayOn{true};
+uint32_t count{};
+uint8_t  columnStartAddressPAM{};
+uint8_t  addressingMode{};
+uint8_t  segmentRemap{};
+uint8_t  columnStartAddress{0};
+uint8_t  columnEndAddress{SSD1306Command::DISPLAY_WIDTH - 1};
+uint8_t  pageStartAddress{0x00};
+uint8_t  pageEndAddress{0x07};
+uint8_t  displayOffset{};
+uint8_t  displayStartLine{};
+
+// horizontal scrolling
+bool     horizontalScrollEnabled{};
+uint8_t  horizontalScrollDirection{};
+uint8_t  horizontalScrollStartPage{};
+uint8_t  horizontalScrollInterval{};
+uint8_t  horizontalScrollEndPage{};
+
+// vertical scrolling
+bool     verticalScrollEnabled{};
+//uint8_t  horizontalScrollDirection{};
+//uint8_t  horizontalScrollStartPage{};
+//uint8_t  horizontalScrollInterval{};
+//uint8_t  horizontalScrollEndPage{};
+
+bool    forceDisplayOn{false};
 bool    invertDisplay{false};
 // running counters
 uint8_t page{};
@@ -113,7 +127,6 @@ void loop()
     if ( !fifo.isEmpty() )
     {
       hexdumpResetPositionCount();
-
       auto value = fifo.readValue();
 
       if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
@@ -163,24 +176,57 @@ void loop()
             }
             case SSD1306Command::SET_COLUMN_ADDRESS:  // 0x21
             {
-              columnStartAddress = readCommandByte();
-              columnEndAddress = readCommandByte();
+              columnStartAddress = readCommandByte() & 0x7f;
+              columnEndAddress = readCommandByte() & 0x7f;
+              column = columnStartAddress;
               Serial.print( F("SET_COLUMN_ADDRESS - startAddress = ") ); Serial.print( columnStartAddress );
               Serial.print( F(", endAddress = ") ); Serial.println( columnEndAddress );
               break;
             }
             case SSD1306Command::SET_PAGE_ADDRESS:  // 0x22
             {
-              pageStartAddress = readCommandByte();
-              pageEndAddress = readCommandByte();
+              pageStartAddress = readCommandByte() & 0x07;
+              pageEndAddress = readCommandByte() & 0x07;
+              page = pageStartAddress;
               Serial.print( F("SET_PAGE_ADDRESS - startAddress = ") ); Serial.print( pageStartAddress );
               Serial.print( F(", endAddress = ") ); Serial.println( pageEndAddress );
+              break;
+            }
+            case SSD1306Command::HORIZONTAL_SCROLL_RIGHT_SETUP: // 0x26
+            case SSD1306Command::HORIZONTAL_SCROLL_LEFT_SETUP:  // 0x27
+            {
+              // set scroll direction (0 : right, 1 : left)
+              horizontalScrollDirection = command & 0x01;
+              // read dummy byte A[7:0] (0x00)
+              readCommandByte();
+              // read start page B[2:0]
+              horizontalScrollStartPage = readCommandByte() & 0x07;
+              // read interval C[2:0]
+              horizontalScrollInterval = readCommandByte() & 0x07;
+              // read end page D[2:0]
+              horizontalScrollEndPage = readCommandByte() & 0x07;
+              // read dummy byte E[7:0] (0x00)
+              readCommandByte();
+              // read dummy byte F[7:0] (0xFF)
+              readCommandByte();
+              Serial.print( horizontalScrollDirection ? F("HORIZONTAL_SCROLL_LEFT_SETUP( startPage = ") : F("HORIZONTAL_SCROLL_RIGHT_SETUP( startPage = ") ); Serial.print( horizontalScrollStartPage );
+              Serial.print( F(", endPage = ") ); Serial.print( horizontalScrollEndPage );
+              Serial.print( F(", interval = ") ); Serial.print( horizontalScrollInterval );
+              Serial.println( F(" )") );
               break;
             }
             case SSD1306Command::DEACTIVATE_SCROLL: // 0x2E
             {
               Serial.println( F("DEACTIVATE_SCROLL") );
-              scrollMode = 0;
+              horizontalScrollEnabled = false;
+              verticalScrollEnabled = false;
+              break;
+            }
+            case SSD1306Command::ACTIVATE_SCROLL:   // 0x2F
+            {
+              Serial.println( F("ACTIVATE_SCROLL") );
+              horizontalScrollEnabled = true;
+              verticalScrollEnabled = true;
               break;
             }
             case SSD1306Command::SET_CONTRAST_CONTROL_FOR_BANK0:  // 0x81
@@ -272,6 +318,8 @@ void loop()
             }
             default:
             {
+              hexdumpResetPositionCount();
+              Serial.print( F("Command = ") ); printHexToSerial( command ); Serial.print( F(" -> ") );
               Serial.println( F("*** unknown command ***" ) );
               break;
             }
@@ -289,6 +337,16 @@ void loop()
     if ( ( count++ % 1000 ) == 0 )
     {
       renderScreen();
+    }
+
+    if ( fifo.isOverflow() )
+    {
+      Serial.println( F("*** FIFO overflow detected!" ) );
+     
+    }
+    if ( fifo.isUnderflow() )
+    {
+      Serial.println( F("*** FIFO underflow detected!" ) );
     }
   }
 }
@@ -345,28 +403,28 @@ void writePixels( uint8_t pixels )
     case SSD1306Command::HORIZONTAL_ADDRESSING_MODE:
       // advance column
       column++;
-      if ( column >= SSD1306Command::DISPLAY_WIDTH )
+      if ( column > columnEndAddress )
       {
         // return to first column and go to next page
-        column = 0;
+        column = columnStartAddress;
         page++;
-        if ( page >= 0x08 )
+        if ( page > pageEndAddress )
         {
-          page = 0x00;
+          page = pageStartAddress;
         }
       }
       break;
     case SSD1306Command::VERTICAL_ADDRESSING_MODE:
       // advance page
       page++;
-      if ( page >= 8 )
+      if ( page > pageEndAddress )
       {
         // return to first page, go to next column
-        page = 0;
+        page = pageStartAddress;
         column++;
-        if ( column >= SSD1306Command::DISPLAY_WIDTH )
+        if ( column >columnEndAddress )
         {
-          column = 0;
+          column = columnStartAddress;
         }
       }
       break;
@@ -374,13 +432,12 @@ void writePixels( uint8_t pixels )
     default:
       // limit column to screen width
       column++;
-      if ( column >= SSD1306Command::DISPLAY_WIDTH )
+      if ( column > columnEndAddress )
       { 
-        column = 0;
+        column = columnStartAddress;
       }
       break;
   }
-  //Serial.print( F("column = ") ); Serial.print( column ); Serial.print( F(", page = ") ); Serial.println( page );
 }
 
 /*---------------------------------------------------------------------------*/
