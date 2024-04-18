@@ -53,7 +53,7 @@ uint8_t page{};
 uint8_t column{};
 
 
-static char frameBuffer[1024];
+static uint8_t frameBuffer[1024];
  
 /*---------------------------------------------------------------------------*/
 // SSD1306 decoder
@@ -336,6 +336,31 @@ void loop()
     // render the screen all 1000 cycles
     if ( ( count++ % 1000 ) == 0 )
     {
+      if ( horizontalScrollEnabled )
+      {
+        for ( uint8_t y = horizontalScrollStartPage; y <= horizontalScrollEndPage; y++ )
+        {
+          if ( horizontalScrollDirection == 1 )
+          {
+            // scroll left
+            uint8_t *dest = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
+            uint8_t *src = dest + 1;
+            auto lost = *dest;
+            memmove( dest, src, SSD1306Command::DISPLAY_WIDTH - 1 );
+            frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1] = lost;
+          }
+          else
+          {
+            // scroll right
+            uint8_t *src = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
+            uint8_t *dest = src + 1;
+            auto lost = frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1];
+            memmove( dest, src, SSD1306Command::DISPLAY_WIDTH -1 );
+            *src = lost;
+          }
+        }
+      }
+
       renderScreen();
     }
 
