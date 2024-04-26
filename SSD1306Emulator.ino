@@ -3,7 +3,7 @@
 * Author: Khaled Magdy
 * For More Info Visit: www.DeepBlueMbedded.com
 */
-#include "SerialHexTools.h"
+#include "SerialHexTools.h"`
 #include <Wire.h>
 #include "fifo.hpp"
 #include "ssd1306commands.h"
@@ -160,7 +160,6 @@ void loop()
         {
           page = command & 0x07;
           Serial.print( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( page ); Serial.println( F(" )" ) );
-          break;
         }
         else 
         {
@@ -468,6 +467,8 @@ void writePixels( uint8_t pixels )
 /*---------------------------------------------------------------------------*/
 void renderBackground()
 {
+  Serial.println( F("renderBackground()") );
+
   for ( int y = 0; y < display.height(); y++ )
   {
     for ( int x = 0; x < display.width(); x++ )
@@ -481,6 +482,8 @@ void renderBackground()
 // Render the screen in the selected style (just 1:1 for now)
 void renderScreen()
 {
+  //Serial.println( F("renderScreen()") );
+
   for ( int y = 0; y < 2 * SSD1306Command::DISPLAY_HEIGHT; y++ )
   {
     for ( int x = 0; x < 2 * SSD1306Command::DISPLAY_WIDTH; x++ )
