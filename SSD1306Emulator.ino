@@ -22,7 +22,7 @@ constexpr uint16_t DATA_MASK    = 0x00ff;
 constexpr uint16_t TYPE_MASK    = 0x8000;
 
 uint32_t count{};
-uint8_t  columnStartAddressPAM{};
+//uint8_t  columnStartAddressPAM{};
 uint8_t  addressingMode{};
 uint8_t  segmentRemap{};
 uint8_t  columnStartAddress{0};
@@ -137,22 +137,26 @@ void loop()
 
         if ( command <= SSD1306Command::SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
         {
-          columnStartAddressPAM &= 0xf0;
-          columnStartAddressPAM |= command & 0xf;
+          // clear lower nibble
+          columnStartAddress &= 0xf0;
+          // set lower nibble to lower command nibble
+          columnStartAddress |= ( command & 0xf );
           Serial.print( F("SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - low nibble = ") ); Serial.println( command & 0x0f );
         }
         else if ( command <= SSD1306Command::SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
         {
-            columnStartAddressPAM &= 0x0f;
-            columnStartAddressPAM |= (command & 0xf ) << 4;
-            Serial.print( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); Serial.println( command & 0x0f );
+          // clear upper nibble
+          columnStartAddress &= 0x0f;
+          // set upper nibble to lower command nibble
+          columnStartAddress |= (command & 0xf ) << 4;
+          Serial.print( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); Serial.println( command & 0x0f );
         }
         else if (    ( command >= SSD1306Command::SET_DISPLAY_START_LINE )
                   && ( command <= SSD1306Command::SET_DISPLAY_START_LINE + 0x3F )
                 )
         {
-            displayStartLine = command & 0x3F;
-            Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( displayStartLine ); Serial.println( F(" )" ) ); 
+          displayStartLine = command & 0x3F;
+          Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( displayStartLine ); Serial.println( F(" )" ) ); 
         }
         else if (    ( command >= SSD1306Command::SET_PAGE_START_ADDRESS )        // 0xB0
                   && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
@@ -235,8 +239,7 @@ void loop()
             }
             case SSD1306Command::CHARGE_PUMP_SETTING:
             {
-              uint8_t mode = readCommandByte();
-              Serial.print( F("CHARGE_PUMP_SETTING( ") ); Serial.print( mode == 0x10 ? F("EXTERNALVCC") : F("ENABLE_CHARGE_PUMP") ); Serial.println( F(" )" ) );
+              Serial.print( F("CHARGE_PUMP_SETTING( ") ); Serial.print( readCommandByte() == 0x10 ? F("EXTERNALVCC") : F("ENABLE_CHARGE_PUMP") ); Serial.println( F(" )" ) );
               break;
             }
             case SSD1306Command::SET_SEGMENT_REMAP:
