@@ -10,6 +10,7 @@ enum SSD1306Command
   SET_PAGE_ADDRESS                      = 0x22,
   SET_DISPLAY_START_LINE                = 0x40, // 0x40 - 0x7F
   SET_CONTRAST_CONTROL_FOR_BANK0        = 0x81,
+  SH110X_DCDC                           = 0x8B, // typcial command to detect SH1106 is expected?
   CHARGE_PUMP_SETTING                   = 0x8D,
   SET_SEGMENT_REMAP                     = 0xA0, // 0xA0/0xA1
   ENTIRE_DISPLAY_ON                     = 0xA4, // 0xA4/0xA5
@@ -31,8 +32,8 @@ enum SSD1306Command
   // graphic acceleration commands
   HORIZONTAL_SCROLL_RIGHT_SETUP                      = 0x26, // 0x26, 0x00, <startPage>, <interval>, <endPage>
   HORIZONTAL_SCROLL_LEFT_SETUP                       = 0x27, // 0x27, 0x00, <startPage>, <interval>, <endPage>
-  CONTINOUS_VERTICAL_UP_AND_HORIZONTAL_SCOLL_SETUP   = 0x29, // 0x29, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
-  CONTINOUS_VERTICAL_DOWN_AND_HORIZONTAL_SCOLL_SETUP = 0x2A, // 0x2A, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
+  CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCOLL_SETUP= 0x29, // 0x29, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
+  CONTINOUS_VERTICAL_AND_HORIZONTAL_LEFT_SCOLL_SETUP = 0x2A, // 0x2A, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
   DEACTIVATE_SCROLL                                  = 0x2E, 
   ACTIVATE_SCROLL                                    = 0x2F,
   SET_VERTICAL_SCROLL_AREA                           = 0xA3, // three byte command

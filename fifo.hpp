@@ -1,7 +1,12 @@
+#pragma once
+
 #include <Arduino.h>
 
-// FIFO size is required to be a power of 2, the capacity is FIFO size - 1.
-constexpr uint16_t FIFO_SIZE = 2048;
+#ifndef SIMPLE_FIFO_SIZE
+  // FIFO size is required to be a power of 2, the capacity is FIFO size - 1.
+  #define SIMPLE_FIFO_SIZE  2048
+#endif
+
 // FIFO read is blocking if the FIFO is empty.
 constexpr bool BLOCKING_FIFO_READ = true;
 // FIFO write is *non* blocking if the FIFO is full.
@@ -33,7 +38,7 @@ public:
     // store in the free value
     buffer[head] = value;
     // increment head pointer
-    head = ++head & ( FIFO_SIZE - 1 );
+    head = ++head & ( SIMPLE_FIFO_SIZE - 1 );
     valuesWritten++;
   }
 
@@ -57,7 +62,7 @@ public:
     }
     // fetch next value
     auto value = buffer[tail];
-    tail = ++tail & ( FIFO_SIZE - 1 );
+    tail = ++tail & ( SIMPLE_FIFO_SIZE - 1 );
     valuesRead++;
     
     return( value );
@@ -66,12 +71,12 @@ public:
 public:
   void     clear() { head = 0; tail = 0; valuesWritten = 0; valuesRead = 0; overflowCount = 0; underflowCount = 0; }
   bool     isEmpty() { return( head == tail ); }
-  bool     isFull() { return( ( ( head + 1 ) & ( FIFO_SIZE - 1 ) ) == tail ); }
+  bool     isFull() { return( ( ( head + 1 ) & ( SIMPLE_FIFO_SIZE - 1 ) ) == tail ); }
   bool     isOverflow() { return( overflowCount != 0 ); }
   bool     isUnderflow() { return( underflowCount != 0 ); }
-  uint16_t size() { return( FIFO_SIZE - 1 ); }
+  uint16_t size() { return( SIMPLE_FIFO_SIZE - 1 ); }
   uint16_t freeCount() { return( size() - fillCount() ); }
-  uint16_t fillCount() { return( ( head - tail )  & ( FIFO_SIZE - 1 ) ); }
+  uint16_t fillCount() { return( ( head - tail )  & ( SIMPLE_FIFO_SIZE - 1 ) ); }
   uint32_t getvaluesWritten() { return( valuesWritten ); }
   uint32_t getvaluesRead() { return( valuesRead ); }
   uint32_t getOverflowCount() { return( overflowCount ); }
@@ -84,5 +89,5 @@ protected:
   volatile uint32_t valuesRead{};
   volatile uint32_t overflowCount{};
   volatile uint32_t underflowCount{};
-  volatile T buffer[FIFO_SIZE];
+  volatile T buffer[SIMPLE_FIFO_SIZE];
 };

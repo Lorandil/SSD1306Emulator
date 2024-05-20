@@ -1,0 +1,95 @@
+#pragma once
+
+#include <Arduino.h>
+
+#define SIMPLE_FIFO_SIZE 2048
+#include "fifo.hpp"
+#include "ssd1306commands.h"
+
+static SimpleFIFO<uint16_t> m_fifo;
+
+class VirtualSSD1306
+{
+  enum Direction
+  {
+    left  = 1,
+    right = 2,
+    up    = 4,
+    down  = 8
+  };
+
+  enum DataTypes
+  {
+    TYPE_COMMAND = 0x0000,
+    TYPE_DATA    = 0x8000,
+    DATA_MASK    = 0x00ff,
+    TYPE_MASK    = 0x8000
+  };
+
+public:
+  VirtualSSD1306( uint8_t width = 128, uint8_t height = 64 );
+  virtual ~VirtualSSD1306();
+
+  virtual void     begin( uint8_t i2cAddress = 0x3C );
+
+  virtual uint8_t  width() { return( m_width ); }
+  virtual uint8_t  height() { return( m_height ); }
+  virtual uint8_t  getPixel( uint8_t x, uint8_t y );
+  virtual uint8_t *getFrameBuffer() { return( m_pFrameBuffer ); }
+  virtual void     processData();
+  static  void     i2cRxHandler( int numBytes );
+
+  virtual void     invertDisplay( bool invertFlag ) { m_invertDisplay = invertFlag ? 0xff : 0x00; }
+  virtual uint8_t  invertDisplay() { return( m_invertDisplay ); }
+  virtual void     forceDisplayOn( bool allPixelsOn ) { m_forceDisplayOn = allPixelsOn ? 0xff : 0x00; }
+  virtual uint8_t  forceDisplayOn() { return( m_forceDisplayOn ); }
+  virtual void     displayOn( bool displayOn ) { m_displayOn = displayOn ? 0xff : 0x00; }
+  virtual uint8_t  displayOn() { return( m_displayOn ); }
+
+
+protected:
+  virtual uint8_t  readCommandByte();
+  virtual uint8_t  readDataByte();
+  virtual void     writePixels( uint8_t pixels );
+  virtual void     scrollHorizontal( Direction dir );
+  virtual void     scrollVertical( Direction dir );
+
+protected:
+  uint8_t          m_width;
+  uint8_t          m_height;
+
+  uint8_t          m_addressingMode{};
+  uint8_t          m_segmentRemap{};
+  uint8_t          m_columnStartAddress{0};
+  uint8_t          m_columnEndAddress{SSD1306Command::DISPLAY_WIDTH - 1};
+  uint8_t          m_pageStartAddress{0x00};
+  uint8_t          m_pageEndAddress{0x07};
+  uint8_t          m_displayOffset{};
+  uint8_t          m_displayStartLine{};
+
+  // scrolling
+  uint32_t         m_scrollTimer{};
+
+  // horizontal scrolling
+  bool             m_horizontalScrollEnabled{};
+  uint8_t          m_horizontalScrollDirection{};
+  uint8_t          m_horizontalScrollStartPage{};
+  uint8_t          m_horizontalScrollInterval{};
+  uint8_t          m_horizontalScrollEndPage{};
+
+  // vertical scrolling
+  bool             m_verticalScrollEnabled{};
+  //uint8_t          m_verticalScrollDirection{};
+  //uint8_t          m_verticalScrollStartPage{};
+  //uint8_t          m_verticalScrollInterval{};
+  //uint8_t          m_verticalScrollEndPage{};
+
+  uint8_t          m_displayOn{0xff};
+  uint8_t          m_forceDisplayOn{0x00};
+  uint8_t          m_invertDisplay{0x00};
+  // running counters
+  uint8_t          m_page{};
+  uint8_t          m_column{};
+
+  uint8_t         *m_pFrameBuffer;
+};
