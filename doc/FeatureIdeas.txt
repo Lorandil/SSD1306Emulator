@@ -1,0 +1,24 @@
+Feature Ideas
+-------------
+
+Software:
+---------
+* create a rendering class
+* try different video modes (e.g. 640x480@256colors)
+* add different render modes, 
+  * scan lines
+  * vignette
+  * film grain
+  * analog noise
+  * analog distortions
+  * ...
+
+Hardware:
+---------
+* add a (solid state) relay to power on the I2C master after the PI pico is ready
+
+TinyJoypad:
+-----------
+* Create custom PCB with module slot and DIP8 socket - does it work to just enable Vcc on one
+  of both ATTinys, perhaps using a mechanical switch? I will try!
+* Integrate the custom PCB into a VCS2600 console case (or an NES or a toaster or ...)

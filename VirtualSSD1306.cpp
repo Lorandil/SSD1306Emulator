@@ -41,9 +41,10 @@ void VirtualSSD1306::begin( uint8_t i2cAddress )
 }
 
 /*--------------------------------------------------------------------------*/
+// image data is stored as one pixel per byte
 uint8_t VirtualSSD1306::getPixel( uint8_t x, uint8_t y )
 {
-  return( 0x00 );
+  return( m_pFrameBuffer[x + y * m_width] );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -159,7 +160,7 @@ void VirtualSSD1306::processData()
             // read start m_page B[2:0]
             m_horizontalScrollStartPage = readCommandByte() & 0x07;
             // read interval C[2:0]
-            m_horizontalScrollInterval = readCommandByte() & 0x07;
+            m_horizontalScrollInterval = scrollingTimerInterval[readCommandByte() & 0x07];
             // read end m_page D[2:0]
             m_horizontalScrollEndPage = readCommandByte() & 0x07;
             // read dummy byte E[7:0] (0x00)
@@ -301,44 +302,6 @@ void VirtualSSD1306::processData()
   {
     Serial.println( F("*** FIFO underflow detected!" ) );
   }
-
-  // perform scrolling if required
-  if ( m_horizontalScrollEnabled )
-  {
-    auto frameBuffer = getFrameBuffer();
-
-    if ( m_scrollTimer % m_horizontalScrollInterval )
-    {
-      for ( uint8_t y = m_horizontalScrollStartPage; y <= m_horizontalScrollEndPage; y++ )
-      {
-        if ( m_horizontalScrollDirection == 1 )
-        {
-          // scroll left
-          uint8_t *dest = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
-          uint8_t *src = dest + 1;
-          auto lost = *dest;
-          memmove( dest, src, SSD1306Command::DISPLAY_WIDTH - 1 );
-          frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1] = lost;
-        }
-        else
-        {
-          // scroll right
-          uint8_t *src = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
-          uint8_t *dest = src + 1;
-          auto lost = frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1];
-          memmove( dest, src, SSD1306Command::DISPLAY_WIDTH -1 );
-          *src = lost;
-        }
-      }
-    }
-  }
-  if ( m_verticalScrollEnabled )
-  {
-    if ( m_scrollTimer % m_horizontalScrollInterval )
-    {
-
-    }
-  }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -432,13 +395,58 @@ void VirtualSSD1306::writePixels( uint8_t pixels )
 }
 
 /*--------------------------------------------------------------------------*/
-void VirtualSSD1306::scrollHorizontal( Direction dir )
+void VirtualSSD1306::performScrolling()
 {
+  // perform scrolling if required
+  if ( m_horizontalScrollEnabled )
+  {
+    if ( ( m_scrollTimer % m_horizontalScrollInterval ) == 0 )
+    {
+      scrollHorizontal();
+    }
+  }
 
+  if ( m_verticalScrollEnabled )
+  {
+    if ( ( m_scrollTimer % m_verticalScrollInterval ) == 0 )
+    {
+      scrollVertical();
+    }
+  }
+
+  // another one finished
+  m_scrollTimer++;
 }
 
 /*--------------------------------------------------------------------------*/
-void VirtualSSD1306::scrollVertical( Direction dir )
+void VirtualSSD1306::scrollHorizontal()
 {
+  auto frameBuffer = getFrameBuffer();
 
+  for ( uint8_t y = m_horizontalScrollStartPage; y <= m_horizontalScrollEndPage; y++ )
+  {
+    if ( m_horizontalScrollDirection == 1 )
+    {
+      // scroll left
+      uint8_t *dest = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
+      uint8_t *src = dest + 1;
+      auto lost = *dest;
+      memmove( dest, src, SSD1306Command::DISPLAY_WIDTH - 1 );
+      frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1] = lost;
+    }
+    else
+    {
+      // scroll right
+      uint8_t *src = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
+      uint8_t *dest = src + 1;
+      auto lost = frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1];
+      memmove( dest, src, SSD1306Command::DISPLAY_WIDTH -1 );
+      *src = lost;
+    }
+  }
+}
+
+/*--------------------------------------------------------------------------*/
+void VirtualSSD1306::scrollVertical()
+{
 }

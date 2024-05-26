@@ -49,6 +49,7 @@ void loop()
     // render the screen all 1000 cycles
     if ( ( count++ % 1000 ) == 0 )
     {
+      virtualSSD1306.performScrolling();
       renderScreen();
     }
   }

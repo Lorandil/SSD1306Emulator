@@ -45,14 +45,15 @@ public:
   virtual uint8_t  forceDisplayOn() { return( m_forceDisplayOn ); }
   virtual void     displayOn( bool displayOn ) { m_displayOn = displayOn ? 0xff : 0x00; }
   virtual uint8_t  displayOn() { return( m_displayOn ); }
+  virtual void     performScrolling();
 
 
 protected:
   virtual uint8_t  readCommandByte();
   virtual uint8_t  readDataByte();
   virtual void     writePixels( uint8_t pixels );
-  virtual void     scrollHorizontal( Direction dir );
-  virtual void     scrollVertical( Direction dir );
+  virtual void     scrollHorizontal();
+  virtual void     scrollVertical();
 
 protected:
   uint8_t          m_width;
@@ -79,10 +80,10 @@ protected:
 
   // vertical scrolling
   bool             m_verticalScrollEnabled{};
-  //uint8_t          m_verticalScrollDirection{};
-  //uint8_t          m_verticalScrollStartPage{};
-  //uint8_t          m_verticalScrollInterval{};
-  //uint8_t          m_verticalScrollEndPage{};
+  uint8_t          m_verticalScrollDirection{};
+  uint8_t          m_verticalScrollStartPage{};
+  uint8_t          m_verticalScrollInterval{};
+  uint8_t          m_verticalScrollEndPage{};
 
   uint8_t          m_displayOn{0xff};
   uint8_t          m_forceDisplayOn{0x00};
@@ -90,6 +91,8 @@ protected:
   // running counters
   uint8_t          m_page{};
   uint8_t          m_column{};
+
+  constexpr static uint32_t scrollingTimerInterval[] = { 5, 64, 12, 256, 3, 4, 25, 2 };
 
   uint8_t         *m_pFrameBuffer;
 };
