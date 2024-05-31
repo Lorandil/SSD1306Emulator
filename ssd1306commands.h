@@ -30,19 +30,18 @@ enum SSD1306Command
   NOP                                   = 0xE3,
 
   // graphic acceleration commands
-  HORIZONTAL_SCROLL_RIGHT_SETUP                      = 0x26, // 0x26, 0x00, <startPage>, <interval>, <endPage>
-  HORIZONTAL_SCROLL_LEFT_SETUP                       = 0x27, // 0x27, 0x00, <startPage>, <interval>, <endPage>
-  CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCOLL_SETUP= 0x29, // 0x29, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
-  CONTINOUS_VERTICAL_AND_HORIZONTAL_LEFT_SCOLL_SETUP = 0x2A, // 0x2A, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
-  DEACTIVATE_SCROLL                                  = 0x2E, 
-  ACTIVATE_SCROLL                                    = 0x2F,
-  SET_VERTICAL_SCROLL_AREA                           = 0xA3, // three byte command
+  HORIZONTAL_SCROLL_RIGHT_SETUP                        = 0x26, // 0x26, 0x00, <startPage>, <interval>, <endPage> <0x00> <0xFF>
+  HORIZONTAL_SCROLL_LEFT_SETUP                         = 0x27, // 0x27, 0x00, <startPage>, <interval>, <endPage> <0x00> <0xFF>
+  CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL_SETUP = 0x29, // 0x29, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
+  CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP  = 0x2A, // 0x2A, 0x00, <startPage>, <interval>, <endPage>, <verticalScrollingOffset>
+  DEACTIVATE_SCROLL                                    = 0x2E, 
+  ACTIVATE_SCROLL                                      = 0x2F,
+  SET_VERTICAL_SCROLL_AREA                             = 0xA3, // three byte command
 
+  HORIZONTAL_ADDRESSING_MODE                           = 0x00,
+  VERTICAL_ADDRESSING_MODE                             = 0x01,
+  PAGE_ADDRESSING_MODE                                 = 0x02,
 
-  HORIZONTAL_ADDRESSING_MODE                         = 0x00,
-  VERTICAL_ADDRESSING_MODE                           = 0x01,
-  PAGE_ADDRESSING_MODE                               = 0x02,
-
-  DISPLAY_WIDTH                                      = 128,
-  DISPLAY_HEIGHT                                     = 64,
+  DISPLAY_WIDTH                                        = 128,
+  DISPLAY_HEIGHT                                       = 64,
 };

@@ -71,28 +71,28 @@ protected:
   // scrolling
   uint32_t         m_scrollTimer{};
 
-  // horizontal scrolling
-  bool             m_horizontalScrollEnabled{};
+  // scrolling
+  bool             m_scrollEnabled{};
   uint8_t          m_horizontalScrollDirection{};
-  uint8_t          m_horizontalScrollStartPage{};
-  uint8_t          m_horizontalScrollInterval{};
-  uint8_t          m_horizontalScrollEndPage{};
+  uint8_t          m_scrollStartPage{};
+  uint8_t          m_scrollEndPage{};
+  uint8_t          m_scrollInterval{};
+  uint8_t          m_verticalScrollOffset{};
+  uint8_t          m_verticalTopFixedLines{};
+  uint8_t          m_verticalScrollAreaLines{};
 
-  // vertical scrolling
-  bool             m_verticalScrollEnabled{};
-  uint8_t          m_verticalScrollDirection{};
-  uint8_t          m_verticalScrollStartPage{};
-  uint8_t          m_verticalScrollInterval{};
-  uint8_t          m_verticalScrollEndPage{};
 
+  // display modifiers
   uint8_t          m_displayOn{0xff};
   uint8_t          m_forceDisplayOn{0x00};
   uint8_t          m_invertDisplay{0x00};
-  // running counters
+
+  // running counters for writing pixels
   uint8_t          m_page{};
   uint8_t          m_column{};
 
   constexpr static uint32_t scrollingTimerInterval[] = { 5, 64, 12, 256, 3, 4, 25, 2 };
 
   uint8_t         *m_pFrameBuffer;
+  uint8_t         *m_pScrollBuffer;
 };

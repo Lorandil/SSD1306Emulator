@@ -8,10 +8,16 @@ VirtualSSD1306::VirtualSSD1306( uint8_t width /*= 128*/, uint8_t height /*= 64*/
 {
   // Allocate frame buffer
   // The data is stored as one byte per pixel, making the data handling a lot easier on the cost of (max. 7kB) RAM
-  m_pFrameBuffer = (uint8_t *) malloc( width * height * 8 );
+  m_pFrameBuffer = (uint8_t *) malloc( width * height );
+  // another buffer for vertical scrolling - for simplicity's sake we use a full size buffer (thank me later)
+  m_pScrollBuffer = (uint8_t *) malloc( width * height );
+
+  // default values for vertical scroll area
+  m_verticalTopFixedLines = 0;
+  m_verticalScrollAreaLines = 64;
 
   // initalize frame buffer to '0x00'
-  memset( m_pFrameBuffer, 0x00, width * height * 8 );
+  memset( m_pFrameBuffer, 0x00, width * height );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -19,6 +25,7 @@ VirtualSSD1306::~VirtualSSD1306()
 {
   // this is probably never going to happen ;)
   free( m_pFrameBuffer );
+  free( m_pScrollBuffer );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -41,10 +48,17 @@ void VirtualSSD1306::begin( uint8_t i2cAddress )
 }
 
 /*--------------------------------------------------------------------------*/
-// image data is stored as one pixel per byte
+// Image data is stored as one pixel per byte
+// The following effects are supported:
+// - forced display on
+// - display inversion
+// - display on/off
 uint8_t VirtualSSD1306::getPixel( uint8_t x, uint8_t y )
 {
-  return( m_pFrameBuffer[x + y * m_width] );
+  auto pixelValue = m_pFrameBuffer[x + y * m_width] | m_forceDisplayOn;
+  pixelValue ^= m_invertDisplay;
+  pixelValue &= m_displayOn;
+  return( pixelValue );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -132,7 +146,7 @@ void VirtualSSD1306::processData()
             Serial.println( F(" )") );
             break;
           }
-          case SSD1306Command::SET_COLUMN_ADDRESS:  // 0x21
+          case SSD1306Command::SET_COLUMN_ADDRESS:          // 0x21
           {
             m_columnStartAddress = readCommandByte() & 0x7f;
             m_columnEndAddress = readCommandByte() & 0x7f;
@@ -141,7 +155,7 @@ void VirtualSSD1306::processData()
             Serial.print( F(", endAddress = ") ); Serial.println( m_columnEndAddress );
             break;
           }
-          case SSD1306Command::SET_PAGE_ADDRESS:  // 0x22
+          case SSD1306Command::SET_PAGE_ADDRESS:            // 0x22
           {
             m_pageStartAddress = readCommandByte() & 0x07;
             m_pageEndAddress = readCommandByte() & 0x07;
@@ -150,41 +164,76 @@ void VirtualSSD1306::processData()
             Serial.print( F(", endAddress = ") ); Serial.println( m_pageEndAddress );
             break;
           }
-          case SSD1306Command::HORIZONTAL_SCROLL_RIGHT_SETUP: // 0x26
-          case SSD1306Command::HORIZONTAL_SCROLL_LEFT_SETUP:  // 0x27
+          case SSD1306Command::HORIZONTAL_SCROLL_RIGHT_SETUP:                        // 0x26
+          case SSD1306Command::HORIZONTAL_SCROLL_LEFT_SETUP:                         // 0x27
           {
             // set scroll direction (0 : right, 1 : left)
-            m_horizontalScrollDirection = command & 0x01;
+            m_horizontalScrollDirection =  ( command == SSD1306Command::HORIZONTAL_SCROLL_LEFT_SETUP );
             // read dummy byte A[7:0] (0x00)
             readCommandByte();
             // read start m_page B[2:0]
-            m_horizontalScrollStartPage = readCommandByte() & 0x07;
+            m_scrollStartPage = readCommandByte() & 0x07;
             // read interval C[2:0]
-            m_horizontalScrollInterval = scrollingTimerInterval[readCommandByte() & 0x07];
+            m_scrollInterval = scrollingTimerInterval[readCommandByte() & 0x07];
             // read end m_page D[2:0]
-            m_horizontalScrollEndPage = readCommandByte() & 0x07;
+            m_scrollEndPage = readCommandByte() & 0x07;
             // read dummy byte E[7:0] (0x00)
-            readCommandByte();
+            m_verticalScrollOffset = readCommandByte();
             // read dummy byte F[7:0] (0xFF)
             readCommandByte();
-            Serial.print( m_horizontalScrollDirection ? F("HORIZONTAL_SCROLL_LEFT_SETUP( startPage = ") : F("HORIZONTAL_SCROLL_RIGHT_SETUP( startPage = ") ); Serial.print( m_horizontalScrollStartPage );
-            Serial.print( F(", endPage = ") ); Serial.print( m_horizontalScrollEndPage );
-            Serial.print( F(", interval = ") ); Serial.print( m_horizontalScrollInterval );
+
+            switch( command )
+            {
+              case SSD1306Command::HORIZONTAL_SCROLL_RIGHT_SETUP:
+                Serial.print( F("HORIZONTAL_SCROLL_RIGHT_SETUP") ); break;
+              case SSD1306Command::HORIZONTAL_SCROLL_LEFT_SETUP:
+              default:
+                Serial.print( F("HORIZONTAL_SCROLL_LEFT_SETUP") ); break;
+            }
+            Serial.print( F("( startPage = ") ); Serial.print( m_scrollStartPage ); Serial.print( F(", endPage = ") ); Serial.print( m_scrollEndPage );
+            Serial.print( F(", interval = ") ); Serial.print( m_scrollInterval ); Serial.print( F(" frames, offset = ") ); Serial.print( m_verticalScrollOffset );
+            Serial.println( F(" )") );
+            break;
+          }
+          case SSD1306Command::CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL_SETUP: // 0x29
+          case SSD1306Command::CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP:  // 0x2A
+          {
+            // set scroll direction (0 : right, 1 : left)
+            m_horizontalScrollDirection = ( command == SSD1306Command::CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP );
+            // read dummy byte A[7:0] (0x00)
+            readCommandByte();
+            // read start m_page B[2:0]
+            m_scrollStartPage = readCommandByte() & 0x07;
+            // read interval C[2:0]
+            m_scrollInterval = scrollingTimerInterval[readCommandByte() & 0x07];
+            // read end m_page D[2:0]
+            m_scrollEndPage = readCommandByte() & 0x07;
+            // read dummy byte E[7:0] (0x00)
+            m_verticalScrollOffset = readCommandByte();
+
+            switch( command )
+            {
+              case SSD1306Command::CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL_SETUP:
+                Serial.print( F("CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCOLL_SETUP") ); break;
+              case SSD1306Command::CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP:
+              default:
+                Serial.print( F("CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP") ); break;
+            }
+            Serial.print( F("( startPage = ") ); Serial.print( m_scrollStartPage ); Serial.print( F(", endPage = ") ); Serial.print( m_scrollEndPage );
+            Serial.print( F(", interval = ") ); Serial.print( m_scrollInterval ); Serial.print( F(" frames, offset = ") ); Serial.print( m_verticalScrollOffset );
             Serial.println( F(" )") );
             break;
           }
           case SSD1306Command::DEACTIVATE_SCROLL: // 0x2E
           {
             Serial.println( F("DEACTIVATE_SCROLL") );
-            m_horizontalScrollEnabled = false;
-            m_verticalScrollEnabled = false;
+            m_scrollEnabled = false;
             break;
           }
           case SSD1306Command::ACTIVATE_SCROLL:   // 0x2F
           {
             Serial.println( F("ACTIVATE_SCROLL") );
-            m_horizontalScrollEnabled = true;
-            m_verticalScrollEnabled = true;
+            m_scrollEnabled = true;
             m_scrollTimer = 0;
             break;
           }
@@ -208,6 +257,15 @@ void VirtualSSD1306::processData()
           {
             Serial.println( F("SET_SEGMENT_REMAP( 127 )") );
             m_segmentRemap = 127;
+            break;
+          }
+          case SSD1306Command::SET_VERTICAL_SCROLL_AREA:  // 0xA3
+          {
+            m_verticalTopFixedLines = readCommandByte();
+            m_verticalScrollAreaLines = readCommandByte();
+            Serial.print( F("SET_VERTICAL_SCROLL_AREA( topFixedLines = ") ); Serial.print( m_verticalTopFixedLines );
+            Serial.print( F(", scrollAreaLines = ") ); Serial.print( m_verticalScrollAreaLines );
+            Serial.println( F(" )") );
             break;
           }
           case SSD1306Command::ENTIRE_DISPLAY_ON:     // 0xA4
@@ -307,20 +365,13 @@ void VirtualSSD1306::processData()
 /*---------------------------------------------------------------------------*/
 uint8_t VirtualSSD1306::readCommandByte()
 {
-  if ( !m_fifo.isEmpty() )
-  {
-    auto value = m_fifo.readValue();
+  auto value = m_fifo.readValue();
 
-    if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
-    {
-      return( uint8_t( value ) );
-    }
-    Serial.println( F("*** Command expected!") );
-  }
-  else
+  if ( ( value & TYPE_MASK ) == TYPE_COMMAND )
   {
-    Serial.println( F("*** Command underflow detected!") );
+    return( uint8_t( value ) );
   }
+  Serial.println( F("*** Command expected!") );
 
   return( 0 );
 }
@@ -349,8 +400,17 @@ uint8_t VirtualSSD1306::readDataByte()
 /*--------------------------------------------------------------------------*/
 void VirtualSSD1306::writePixels( uint8_t pixels )
 {
-  // store pixels into frame buffer
+#ifdef _PACKED_PIXELS  
+  // store pixels 1:1 into frame buffer
   m_pFrameBuffer[m_column + m_page * m_width] = pixels;
+#else
+  // less efficient when storing, but allows much easier handling for scrolling and rendering
+  for ( uint8_t y = 0; y < 8; y++ )
+  {
+    // store 0xff when pixel set and 0x00 otherwise
+    m_pFrameBuffer[m_column + ( m_page * 8 + y ) * m_width] = ( pixels & ( 1 << y ) ? 0xff : 0x00 );
+  }
+#endif
 
   switch( m_addressingMode )
   {
@@ -398,18 +458,11 @@ void VirtualSSD1306::writePixels( uint8_t pixels )
 void VirtualSSD1306::performScrolling()
 {
   // perform scrolling if required
-  if ( m_horizontalScrollEnabled )
+  if ( m_scrollEnabled )
   {
-    if ( ( m_scrollTimer % m_horizontalScrollInterval ) == 0 )
+    if ( ( m_scrollTimer % m_scrollInterval ) == 0 )
     {
       scrollHorizontal();
-    }
-  }
-
-  if ( m_verticalScrollEnabled )
-  {
-    if ( ( m_scrollTimer % m_verticalScrollInterval ) == 0 )
-    {
       scrollVertical();
     }
   }
@@ -421,26 +474,27 @@ void VirtualSSD1306::performScrolling()
 /*--------------------------------------------------------------------------*/
 void VirtualSSD1306::scrollHorizontal()
 {
-  auto frameBuffer = getFrameBuffer();
+  uint8_t startLine = m_scrollStartPage * 8;
+  uint8_t endLine = ( m_scrollEndPage + 1 ) * 8;
 
-  for ( uint8_t y = m_horizontalScrollStartPage; y <= m_horizontalScrollEndPage; y++ )
+  for ( uint8_t y = startLine; y < endLine; y++ )
   {
     if ( m_horizontalScrollDirection == 1 )
     {
       // scroll left
-      uint8_t *dest = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
+      uint8_t *dest = &m_pFrameBuffer[y * m_width];
       uint8_t *src = dest + 1;
       auto lost = *dest;
-      memmove( dest, src, SSD1306Command::DISPLAY_WIDTH - 1 );
-      frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1] = lost;
+      memmove( dest, src, m_width - 1 );
+      m_pFrameBuffer[( y + 1 ) * m_width - 1] = lost;
     }
     else
     {
       // scroll right
-      uint8_t *src = &frameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
+      uint8_t *src = &m_pFrameBuffer[y * SSD1306Command::DISPLAY_WIDTH];
       uint8_t *dest = src + 1;
-      auto lost = frameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1];
-      memmove( dest, src, SSD1306Command::DISPLAY_WIDTH -1 );
+      auto lost = m_pFrameBuffer[( y + 1 ) * SSD1306Command::DISPLAY_WIDTH - 1];
+      memmove( dest, src, m_width -1 );
       *src = lost;
     }
   }
@@ -449,4 +503,21 @@ void VirtualSSD1306::scrollHorizontal()
 /*--------------------------------------------------------------------------*/
 void VirtualSSD1306::scrollVertical()
 {
+  if ( m_verticalScrollOffset != 0 )
+  {
+    // copy full frame buffer to scrolling buffer
+    memcpy( m_pScrollBuffer, m_pFrameBuffer, m_width * m_height );
+
+    for ( uint8_t y = 0; y < m_verticalScrollAreaLines; y++ )
+    {
+      uint8_t targetLine = y + m_verticalScrollOffset;
+      if ( targetLine >= m_verticalScrollAreaLines )
+      {
+        targetLine = ( targetLine % m_verticalScrollAreaLines );
+      }
+      auto *dest = &m_pFrameBuffer[( targetLine + m_verticalTopFixedLines ) * m_width];
+      auto *src = &m_pScrollBuffer[( y + m_verticalTopFixedLines ) * m_width];
+      memcpy( dest, src, m_width );
+    }
+  }
 }

@@ -73,6 +73,7 @@ void renderBackground()
 // Render the screen in the selected style (just 1:1 for now)
 void renderScreen()
 {
+#ifdef _PACKED_PIXELS  
   auto frameBuffer = virtualSSD1306.getFrameBuffer();
 
   auto forceDisplayOn = virtualSSD1306.forceDisplayOn();
@@ -90,4 +91,20 @@ void renderScreen()
       display.drawPixel(x + 32, y + 48, pixelValue ? 0xFFFF : 0x0000 );
     }
   }
+#else
+  for ( uint8_t y = 0; y < virtualSSD1306.height(); y++ )
+  {
+    for ( uint8_t x = 0; x < virtualSSD1306.width(); x++ )
+    {
+      // get pixel with optional effects (inverted, display on/off, forced on)
+      auto pixelValue = virtualSSD1306.getPixel( x, y );
+      // RGB565
+      uint16_t gray = ( 0x0f ) + ( 0x0f << 6 ) + ( 0x0f << 11 );
+      display.drawPixel( 2 * x + 32, 2 * y + 48, pixelValue ? 0xffff : 0x0000 );
+      display.drawPixel( 2 * x + 32, 2 * y + 49, pixelValue ? gray : 0x0000 );
+      display.drawPixel( 2 * x + 33, 2 * y + 48, pixelValue ? gray : 0x0000 );
+      display.drawPixel( 2 * x + 33, 2 * y + 49, pixelValue ? gray : 0x0000 );
+    }
+  }
+#endif
 }
