@@ -1,3 +1,6 @@
+2024-05-31
+First version completely passing the i2c demo for the Adafruit_SSD1306 library :)
+
 2024-05-20
 Refactored the code, all emulation has been moved to the VirtualSSD1306 class
 The next step will be to move the render code into a class, too.
