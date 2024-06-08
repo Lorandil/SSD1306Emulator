@@ -4,7 +4,7 @@
 #include "SerialHexTools.h"
 
 /*--------------------------------------------------------------------------*/
-VirtualSSD1306::VirtualSSD1306( uint8_t width /*= 128*/, uint8_t height /*= 64*/ ) : m_width( width ), m_height( height )
+VirtualSSD1306::VirtualSSD1306( uint16_t width /*= 128*/, uint16_t height /*= 64*/ ) : VirtualDisplayBase( width, height )
 {
   // Allocate frame buffer
   // The data is stored as one byte per pixel, making the data handling a lot easier on the cost of (max. 7kB) RAM

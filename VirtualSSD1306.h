@@ -5,10 +5,11 @@
 #define SIMPLE_FIFO_SIZE 2048
 #include "fifo.hpp"
 #include "ssd1306commands.h"
+#include "VirtualDisplayBase.h"
 
 static SimpleFIFO<uint16_t> m_fifo;
 
-class VirtualSSD1306
+class VirtualSSD1306 : public VirtualDisplayBase
 {
   enum Direction
   {
@@ -27,17 +28,14 @@ class VirtualSSD1306
   };
 
 public:
-  VirtualSSD1306( uint8_t width = 128, uint8_t height = 64 );
+  VirtualSSD1306( uint16_t width = 128, uint16_t height = 64 );
   virtual ~VirtualSSD1306();
 
-  virtual void     begin( uint8_t i2cAddress = 0x3C );
+  void     begin( uint8_t i2cAddress = 0x3C ) override;
 
-  virtual uint8_t  width() { return( m_width ); }
-  virtual uint8_t  height() { return( m_height ); }
-  virtual uint8_t  getPixel( uint8_t x, uint8_t y );
-  virtual uint8_t *getFrameBuffer() { return( m_pFrameBuffer ); }
-  virtual void     processData();
-  static  void     i2cRxHandler( int numBytes );
+  uint8_t  getPixel( uint8_t x, uint8_t y ) override;
+  uint8_t *getFrameBuffer() override { return( m_pFrameBuffer ); }
+  void     processData() override;
 
   virtual void     invertDisplay( bool invertFlag ) { m_invertDisplay = invertFlag ? 0xff : 0x00; }
   virtual uint8_t  invertDisplay() { return( m_invertDisplay ); }
@@ -49,6 +47,7 @@ public:
 
 
 protected:
+  static  void     i2cRxHandler( int numBytes );
   virtual uint8_t  readCommandByte();
   virtual uint8_t  readDataByte();
   virtual void     writePixels( uint8_t pixels );
@@ -56,9 +55,6 @@ protected:
   virtual void     scrollVertical();
 
 protected:
-  uint8_t          m_width;
-  uint8_t          m_height;
-
   uint8_t          m_addressingMode{};
   uint8_t          m_segmentRemap{};
   uint8_t          m_columnStartAddress{0};

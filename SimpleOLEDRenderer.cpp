@@ -6,8 +6,9 @@
 DVIGFX16 display(DVI_RES_320x240p60, pico_sock_cfg);
 
 /*--------------------------------------------------------------------------*/
-SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualSSD1306 *pVirtualSSD1306 ) : m_pVirtualSSD1306( pVirtualSSD1306 )
+SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay ) : RendererBase( pVirtualDisplay )
 {
+  m_pVirtualDisplay = pVirtualDisplay;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -40,11 +41,11 @@ void SimpleOLEDRenderer::renderBackground()
 void SimpleOLEDRenderer::renderScreen()
 {
 #ifdef _PACKED_PIXELS  
-  auto frameBuffer = m_pVirtualSSD1306->getFrameBuffer();
+  auto frameBuffer = m_pVirtualDisplay->getFrameBuffer();
 
-  auto forceDisplayOn = m_pVirtualSSD1306->forceDisplayOn();
-  auto invertDisplay = m_pVirtualSSD1306->invertDisplay();
-  auto displayOn = m_pVirtualSSD1306->displayOn();
+  auto forceDisplayOn = m_pVirtualDisplay->forceDisplayOn();
+  auto invertDisplay = m_pVirtualDisplay->invertDisplay();
+  auto displayOn = m_pVirtualDisplay->displayOn();
 
   for ( int y = 0; y < 2 * SSD1306Command::DISPLAY_HEIGHT; y++ )
   {
@@ -58,12 +59,12 @@ void SimpleOLEDRenderer::renderScreen()
     }
   }
 #else
-  for ( uint8_t y = 0; y < m_pVirtualSSD1306->height(); y++ )
+  for ( uint8_t y = 0; y < m_pVirtualDisplay->height(); y++ )
   {
-    for ( uint8_t x = 0; x < m_pVirtualSSD1306->width(); x++ )
+    for ( uint8_t x = 0; x < m_pVirtualDisplay->width(); x++ )
     {
       // get pixel with optional effects (inverted, display on/off, forced on)
-      auto pixelValue = m_pVirtualSSD1306->getPixel( x, y );
+      auto pixelValue = m_pVirtualDisplay->getPixel( x, y );
       // RGB565
       uint16_t color = ( 0x0f << 11 ) + ( 0x3f << 5 ) + ( 0x1f ); // cyan
       //uint16_t color = ( 0x1f << 11 ) + ( 0x3f << 5 ) + ( 0x00 ); // yellow
