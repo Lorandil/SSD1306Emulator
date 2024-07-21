@@ -1,16 +1,17 @@
 /*
-* LAB Name: Arduino I2C Slave(Rx)
-* Author: Khaled Magdy
-* For More Info Visit: www.DeepBlueMbedded.com
+* SSD1306Emulator - a simple emulator to render data intended for an SSD1306 to DVI using PicoDVI
+* 2024-07-21 Lorandil
 */
 #include "SimpleOLEDRenderer.h"
+#include "SimpleOLEDRenderer8Bit.h"
 #include "VirtualSSD1306.h"
 
-// setup SSD1306 emualtion layer
+// setup SSD1306 emulation layer
 VirtualSSD1306 virtualSSD1306( 128, 64 );
 
-// and rendering class
+// and rendering class (uncomment exactly one line)
 SimpleOLEDRenderer renderer( &virtualSSD1306 );
+//SimpleOLEDRenderer8Bit renderer( &virtualSSD1306 );
 
 /*---------------------------------------------------------------------------*/
 void setup()
@@ -20,10 +21,15 @@ void setup()
 
   Serial.begin( 115200 );
   
+  for ( int n = 0; n < 5; n++ )
+  {
+    Serial.print( F(".") );
+    delay( 1000 );
+  }
+  Serial.println();
+
   renderer.initScreen();
   
-  delay( 2000 );
-
   // start virtual SSD1306
   virtualSSD1306.begin( 0x3C );
 

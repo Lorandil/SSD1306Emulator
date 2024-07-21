@@ -4,16 +4,16 @@
 #include "RendererBase.h"
 #include "VirtualDisplayBase.h"
 
-class SimpleOLEDRenderer : public RendererBase
+class SimpleOLEDRenderer8Bit : public RendererBase
 {
 public:
-  SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay );
+  SimpleOLEDRenderer8Bit( VirtualDisplayBase *pVirtualDisplay );
 
   void initScreen() override;
   void renderBackground() override;
   void renderScreen() override;
 
 protected:
-  VirtualDisplayBase *m_pVirtualDisplay;
-  class DVIGFX16     *m_pDisplay{};
+  VirtualDisplayBase *m_pVirtualDisplay{};
+  class DVIGFX8      *m_pDisplay{};
 };

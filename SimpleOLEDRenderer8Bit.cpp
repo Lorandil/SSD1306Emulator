@@ -1,21 +1,31 @@
-#include "SimpleOLEDRenderer.h"
+#include "SimpleOLEDRenderer8Bit.h"
 
 #include <PicoDVI.h> // Core display & graphics library
 
 /*--------------------------------------------------------------------------*/
-SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay ) : RendererBase( pVirtualDisplay )
+SimpleOLEDRenderer8Bit::SimpleOLEDRenderer8Bit( VirtualDisplayBase *pVirtualDisplay ) : RendererBase( pVirtualDisplay )
 {
+  Serial.println( F("c'tor") );
+
   m_pVirtualDisplay = pVirtualDisplay;
 
-// 320x240 16-bit color display (to match common TFT display resolution):
-  m_pDisplay = new DVIGFX16( DVI_RES_320x240p60, pico_sock_cfg );
+  // 640x240 8-bit color display (to match common TFT display resolution):
+  m_pDisplay = new DVIGFX8( DVI_RES_640x240p60, false, pico_sock_cfg );
+  if ( !m_pDisplay )
+  {
+    // this is bad!
+    pinMode(LED_BUILTIN, OUTPUT);
+    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
+  }
   m_width = m_pDisplay->width();
   m_height = m_pDisplay->height();
 }
 
 /*--------------------------------------------------------------------------*/
-void SimpleOLEDRenderer::initScreen()
+void SimpleOLEDRenderer8Bit::initScreen()
 {
+  Serial.println( F("initScreen()") );
+
   if (!m_pDisplay->begin()) { // Blink LED if insufficient RAM
     pinMode(LED_BUILTIN, OUTPUT);
     for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
@@ -23,8 +33,11 @@ void SimpleOLEDRenderer::initScreen()
 }
 
 /*--------------------------------------------------------------------------*/
-void SimpleOLEDRenderer::renderBackground()
+void SimpleOLEDRenderer8Bit::renderBackground()
 {
+  Serial.println( F("renderBackground()") );
+
+  /*
   for ( int y = 0; y < m_pDisplay->height(); y++ )
   {
     for ( int x = 0; x < m_pDisplay->width(); x++ )
@@ -32,11 +45,14 @@ void SimpleOLEDRenderer::renderBackground()
       m_pDisplay->drawPixel(x, y, y * m_pDisplay->width() + x );
     }
   }
+  */
 }
 
 /*--------------------------------------------------------------------------*/
-void SimpleOLEDRenderer::renderScreen()
+void SimpleOLEDRenderer8Bit::renderScreen()
 {
+  Serial.println( F("renderScreen()") );
+/*  
 #ifdef _PACKED_PIXELS  
   auto frameBuffer = m_pVirtualDisplay->getFrameBuffer();
 
@@ -73,5 +89,6 @@ void SimpleOLEDRenderer::renderScreen()
     }
   }
 #endif
+*/
 }
  
