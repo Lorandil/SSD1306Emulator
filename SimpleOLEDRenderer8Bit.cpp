@@ -14,8 +14,7 @@ SimpleOLEDRenderer8Bit::SimpleOLEDRenderer8Bit( VirtualDisplayBase *pVirtualDisp
   {
     Serial.println( F("*** Failed to create DVIGFX8!") );
     // this is bad!
-    pinMode(LED_BUILTIN, OUTPUT);
-    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
+    panic();
   }
   m_width = m_pDisplay->width();
   m_height = m_pDisplay->height();
@@ -27,8 +26,8 @@ void SimpleOLEDRenderer8Bit::initScreen()
   Serial.println( F("initScreen()") );
 
   if (!m_pDisplay->begin()) { // Blink LED if insufficient RAM
-    pinMode(LED_BUILTIN, OUTPUT);
-    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
+    Serial.println( F("*** insufficient RAM!") );
+    panic();
   }
 }
 

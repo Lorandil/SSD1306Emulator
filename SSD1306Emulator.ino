@@ -10,7 +10,7 @@
 // setup SSD1306 emulation layer
 VirtualSSD1306 virtualSSD1306( 128, 64 );
 
-// declare rendering class pointer
+// declare global rendering class pointer
 RendererBase *pRenderer{};
 
 /*---------------------------------------------------------------------------*/
@@ -29,10 +29,11 @@ void setup()
   Serial.println();
 
   // uncomment exactly one line of the following:
-  pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
-  //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
+  //pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
+  pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
   //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
 
+  // screen initilization
   pRenderer->initScreen();
   
   // start virtual SSD1306

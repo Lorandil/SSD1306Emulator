@@ -23,6 +23,13 @@ public:
   // optional functions:
   virtual void saveScreenshot( unsigned char fileName ) {}
 
+  // panic function - perpetually blink onboard LED 
+  virtual void panic()
+  {
+    pinMode(LED_BUILTIN, OUTPUT);
+    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
+  }
+
 protected:
   uint16_t            m_scaleX{1};
   uint16_t            m_scaleY{1};

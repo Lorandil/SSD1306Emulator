@@ -8,6 +8,12 @@ SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay, uin
 {
   // 320x240 16-bit color display (to match common TFT display resolution):
   m_pDisplay = new DVIGFX16( DVI_RES_320x240p60, pico_sock_cfg );
+  if ( !m_pDisplay )
+  {
+    Serial.println( F("*** Failed to create DVIGFX16!") );
+    // this is bad!
+    panic();
+  }
   m_width = m_pDisplay->width();
   m_height = m_pDisplay->height();
 }
@@ -18,8 +24,7 @@ void SimpleOLEDRenderer::initScreen()
   Serial.println( F("initScreen()") );
 
   if (!m_pDisplay->begin()) { // Blink LED if insufficient RAM
-    pinMode(LED_BUILTIN, OUTPUT);
-    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
+    panic();
   }
 }
 
