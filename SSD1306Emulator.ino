@@ -10,10 +10,8 @@
 // setup SSD1306 emulation layer
 VirtualSSD1306 virtualSSD1306( 128, 64 );
 
-// and rendering class (uncomment exactly one line)
-SimpleOLEDRenderer renderer( &virtualSSD1306, 2, 2 );
-//SimpleOLEDRenderer1Bit renderer( &virtualSSD1306, 2, 2 );
-//SimpleOLEDRenderer8Bit renderer( &virtualSSD1306, 2, 2 );
+// declare rendering class pointer
+RendererBase *pRenderer{};
 
 /*---------------------------------------------------------------------------*/
 void setup()
@@ -30,7 +28,12 @@ void setup()
   }
   Serial.println();
 
-  renderer.initScreen();
+  // uncomment exactly one line of the following:
+  pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
+  //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
+  //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
+
+  pRenderer->initScreen();
   
   // start virtual SSD1306
   virtualSSD1306.begin( 0x3C );
@@ -42,7 +45,7 @@ void setup()
 /*---------------------------------------------------------------------------*/
 void loop()
 {
-  renderer.renderBackground();
+  pRenderer->renderBackground();
 
   uint32_t count{};
 
@@ -54,7 +57,7 @@ void loop()
     if ( ( count++ % 1000 ) == 0 )
     {
       virtualSSD1306.performScrolling();
-      renderer.renderScreen();
+      pRenderer->renderScreen();
     }
   }
 }

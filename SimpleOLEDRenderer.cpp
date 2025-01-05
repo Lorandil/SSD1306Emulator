@@ -15,6 +15,8 @@ SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay, uin
 /*--------------------------------------------------------------------------*/
 void SimpleOLEDRenderer::initScreen()
 {
+  Serial.println( F("initScreen()") );
+
   if (!m_pDisplay->begin()) { // Blink LED if insufficient RAM
     pinMode(LED_BUILTIN, OUTPUT);
     for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
