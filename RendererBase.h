@@ -6,7 +6,12 @@
 class RendererBase
 {
 public:
-  RendererBase( VirtualDisplayBase *pVirtualDisplay ) {}
+  RendererBase( VirtualDisplayBase *pVirtualDisplay, uint16_t scaleX, uint16_t scaleY )
+  {
+    m_pVirtualDisplay = pVirtualDisplay;
+    m_scaleX = scaleX;
+    m_scaleY = scaleY;
+  }
   virtual ~RendererBase() = default;
 
   virtual void initScreen() = 0;
@@ -16,13 +21,12 @@ public:
   virtual uint16_t getScreenHeight() { return( m_height ); }
 
   // optional functions:
-  // aspect ration (e.g. 4:3, 16:9, ... )
-  virtual void setAspectRation( uint16_t aspectX, uint16_t aspectY ) { m_aspectX = aspectX; m_aspectY = aspectY; }
   virtual void saveScreenshot( unsigned char fileName ) {}
 
 protected:
-  uint16_t m_aspectX{1};
-  uint16_t m_aspectY{1};
-  uint16_t m_width{0};
-  uint16_t m_height{0};
+  uint16_t            m_scaleX{1};
+  uint16_t            m_scaleY{1};
+  uint16_t            m_width{0};
+  uint16_t            m_height{0};
+  VirtualDisplayBase *m_pVirtualDisplay{};
 };

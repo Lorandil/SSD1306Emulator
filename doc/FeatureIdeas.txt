@@ -3,12 +3,13 @@ Feature Ideas
 
 Software:
 ---------
+* aspect ratio support/correction
 * try different video modes (e.g. 640x480@256colors)
 * support background image as a frame
-* aspect ratio support/correction
 * screenshot to SD card function
 * mirror mode/passthrough mode: output all received data to second i2c interface
 * add different render modes, 
+  * blue/yellow display
   * scan lines
   * vignette
   * film grain
@@ -25,3 +26,7 @@ TinyJoypad:
 * Create custom PCB with module slot and DIP8 socket - does it work to just enable Vcc on one
   of both ATTinys, perhaps using a mechanical switch? I will try!
 * Integrate the custom PCB into a VCS2600 console case (or an NES or a toaster or ...)
+  - use switches 
+    + for aspect ratio
+    + render mode
+    + screenshots

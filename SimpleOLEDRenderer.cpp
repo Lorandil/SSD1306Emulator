@@ -3,11 +3,10 @@
 #include <PicoDVI.h> // Core display & graphics library
 
 /*--------------------------------------------------------------------------*/
-SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay ) : RendererBase( pVirtualDisplay )
+SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay, uint16_t scaleX, uint16_t scaleY )
+ : RendererBase( pVirtualDisplay, scaleX, scaleY )
 {
-  m_pVirtualDisplay = pVirtualDisplay;
-
-// 320x240 16-bit color display (to match common TFT display resolution):
+  // 320x240 16-bit color display (to match common TFT display resolution):
   m_pDisplay = new DVIGFX16( DVI_RES_320x240p60, pico_sock_cfg );
   m_width = m_pDisplay->width();
   m_height = m_pDisplay->height();
