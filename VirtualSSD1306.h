@@ -28,7 +28,7 @@ class VirtualSSD1306 : public VirtualDisplayBase
   };
 
 public:
-  VirtualSSD1306( uint16_t width = 128, uint16_t height = 64 );
+  VirtualSSD1306( uint16_t width = 128, uint16_t height = 64, bool enableDebugOutput = false );
   virtual ~VirtualSSD1306();
 
   void     begin( uint8_t i2cAddress = 0x3C ) override;
@@ -89,6 +89,6 @@ protected:
 
   constexpr static uint32_t scrollingTimerInterval[] = { 5, 64, 12, 256, 3, 4, 25, 2 };
 
-  uint8_t         *m_pFrameBuffer;
-  uint8_t         *m_pScrollBuffer;
+  uint8_t         *m_pFrameBuffer{};
+  uint8_t         *m_pScrollBuffer{};
 };

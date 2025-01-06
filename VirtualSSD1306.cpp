@@ -4,7 +4,7 @@
 #include "SerialHexTools.h"
 
 /*--------------------------------------------------------------------------*/
-VirtualSSD1306::VirtualSSD1306( uint16_t width /*= 128*/, uint16_t height /*= 64*/ ) : VirtualDisplayBase( width, height )
+VirtualSSD1306::VirtualSSD1306( uint16_t width /*= 128*/, uint16_t height /*= 64*/, bool enableDebugOutput ) : VirtualDisplayBase( width, height, enableDebugOutput )
 {
   // Allocate frame buffer
   // The data is stored as one byte per pixel, making the data handling a lot easier on the cost of (max. 7kB) RAM
@@ -102,7 +102,7 @@ void VirtualSSD1306::processData()
     {
       uint8_t command = uint8_t( value );
 
-      Serial.print( F("Command = ") ); printHexToSerial( command ); Serial.print( F(" -> ") );
+      DebugOutput( F("Command = ") ); printHexToSerial( command ); DebugOutput( F(" -> ") );
 
       if ( command <= SSD1306Command::SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
       {
@@ -110,7 +110,7 @@ void VirtualSSD1306::processData()
         m_columnStartAddress &= 0xf0;
         // set lower nibble to lower command nibble
         m_columnStartAddress |= ( command & 0xf );
-        Serial.print( F("SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - low nibble = ") ); Serial.println( command & 0x0f );
+        DebugOutput( F("SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - low nibble = ") ); DebugOutputLn( command & 0x0f );
       }
       else if ( command <= SSD1306Command::SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
       {
@@ -118,21 +118,21 @@ void VirtualSSD1306::processData()
         m_columnStartAddress &= 0x0f;
         // set upper nibble to lower command nibble
         m_columnStartAddress |= (command & 0xf ) << 4;
-        Serial.print( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); Serial.println( command & 0x0f );
+        DebugOutput( F("SET_HIGHER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE - high nibble = ") ); DebugOutputLn( command & 0x0f );
       }
       else if (    ( command >= SSD1306Command::SET_DISPLAY_START_LINE )
                 && ( command <= SSD1306Command::SET_DISPLAY_START_LINE + 0x3F )
               )
       {
         m_displayStartLine = command & 0x3F;
-        Serial.print( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( m_displayStartLine ); Serial.println( F(" )" ) ); 
+        DebugOutput( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( m_displayStartLine ); DebugOutputLn( F(" )" ) ); 
       }
       else if (    ( command >= SSD1306Command::SET_PAGE_START_ADDRESS )        // 0xB0
                 && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
               )
       {
         m_page = command & 0x07;
-        Serial.print( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( m_page ); Serial.println( F(" )" ) );
+        DebugOutput( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( m_page ); DebugOutputLn( F(" )" ) );
       }
       else 
       {
@@ -141,9 +141,9 @@ void VirtualSSD1306::processData()
           case SSD1306Command::SET_MEMORY_ADDRESSING_MODE:  // 0x20
           {
             m_addressingMode = readCommandByte() & 0x03;
-            Serial.print( F("SET_MEMORY_ADDRESSING_MODE( ") ); 
-            Serial.print( m_addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ? F("horizontal") : ( m_addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
-            Serial.println( F(" )") );
+            DebugOutput( F("SET_MEMORY_ADDRESSING_MODE( ") ); 
+            DebugOutput( m_addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ? F("horizontal") : ( m_addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
+            DebugOutputLn( F(" )") );
             break;
           }
           case SSD1306Command::SET_COLUMN_ADDRESS:          // 0x21
@@ -151,8 +151,8 @@ void VirtualSSD1306::processData()
             m_columnStartAddress = readCommandByte() & 0x7f;
             m_columnEndAddress = readCommandByte() & 0x7f;
             m_column = m_columnStartAddress;
-            Serial.print( F("SET_COLUMN_ADDRESS - startAddress = ") ); Serial.print( m_columnStartAddress );
-            Serial.print( F(", endAddress = ") ); Serial.println( m_columnEndAddress );
+            DebugOutput( F("SET_COLUMN_ADDRESS - startAddress = ") ); DebugOutput( m_columnStartAddress );
+            DebugOutput( F(", endAddress = ") ); DebugOutputLn( m_columnEndAddress );
             break;
           }
           case SSD1306Command::SET_PAGE_ADDRESS:            // 0x22
@@ -160,8 +160,8 @@ void VirtualSSD1306::processData()
             m_pageStartAddress = readCommandByte() & 0x07;
             m_pageEndAddress = readCommandByte() & 0x07;
             m_page = m_pageStartAddress;
-            Serial.print( F("SET_PAGE_ADDRESS - startAddress = ") ); Serial.print( m_pageStartAddress );
-            Serial.print( F(", endAddress = ") ); Serial.println( m_pageEndAddress );
+            DebugOutput( F("SET_PAGE_ADDRESS - startAddress = ") ); DebugOutput( m_pageStartAddress );
+            DebugOutput( F(", endAddress = ") ); DebugOutputLn( m_pageEndAddress );
             break;
           }
           case SSD1306Command::HORIZONTAL_SCROLL_RIGHT_SETUP:                        // 0x26
@@ -185,14 +185,16 @@ void VirtualSSD1306::processData()
             switch( command )
             {
               case SSD1306Command::HORIZONTAL_SCROLL_RIGHT_SETUP:
-                Serial.print( F("HORIZONTAL_SCROLL_RIGHT_SETUP") ); break;
+                DebugOutput( F("HORIZONTAL_SCROLL_RIGHT_SETUP") ); 
+                break;
               case SSD1306Command::HORIZONTAL_SCROLL_LEFT_SETUP:
               default:
-                Serial.print( F("HORIZONTAL_SCROLL_LEFT_SETUP") ); break;
+                DebugOutput( F("HORIZONTAL_SCROLL_LEFT_SETUP") );
+                break;
             }
-            Serial.print( F("( startPage = ") ); Serial.print( m_scrollStartPage ); Serial.print( F(", endPage = ") ); Serial.print( m_scrollEndPage );
-            Serial.print( F(", interval = ") ); Serial.print( m_scrollInterval ); Serial.print( F(" frames, offset = ") ); Serial.print( m_verticalScrollOffset );
-            Serial.println( F(" )") );
+            DebugOutput( F("( startPage = ") ); DebugOutput( m_scrollStartPage ); DebugOutput( F(", endPage = ") ); DebugOutput( m_scrollEndPage );
+            DebugOutput( F(", interval = ") ); DebugOutput( m_scrollInterval ); DebugOutput( F(" frames, offset = ") ); DebugOutput( m_verticalScrollOffset );
+            DebugOutputLn( F(" )") );
             break;
           }
           case SSD1306Command::CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL_SETUP: // 0x29
@@ -214,48 +216,50 @@ void VirtualSSD1306::processData()
             switch( command )
             {
               case SSD1306Command::CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL_SETUP:
-                Serial.print( F("CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCOLL_SETUP") ); break;
+                DebugOutput( F("CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCOLL_SETUP") );
+                break;
               case SSD1306Command::CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP:
               default:
-                Serial.print( F("CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP") ); break;
+                DebugOutput( F("CONTINOUS_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL_SETUP") );
+                break;
             }
-            Serial.print( F("( startPage = ") ); Serial.print( m_scrollStartPage ); Serial.print( F(", endPage = ") ); Serial.print( m_scrollEndPage );
-            Serial.print( F(", interval = ") ); Serial.print( m_scrollInterval ); Serial.print( F(" frames, offset = ") ); Serial.print( m_verticalScrollOffset );
-            Serial.println( F(" )") );
+            DebugOutput( F("( startPage = ") ); DebugOutput( m_scrollStartPage ); DebugOutput( F(", endPage = ") ); DebugOutput( m_scrollEndPage );
+            DebugOutput( F(", interval = ") ); DebugOutput( m_scrollInterval ); DebugOutput( F(" frames, offset = ") ); DebugOutput( m_verticalScrollOffset );
+            DebugOutputLn( F(" )") );
             break;
           }
           case SSD1306Command::DEACTIVATE_SCROLL: // 0x2E
           {
-            Serial.println( F("DEACTIVATE_SCROLL") );
+            DebugOutputLn( F("DEACTIVATE_SCROLL") );
             m_scrollEnabled = false;
             break;
           }
           case SSD1306Command::ACTIVATE_SCROLL:   // 0x2F
           {
-            Serial.println( F("ACTIVATE_SCROLL") );
+            DebugOutputLn( F("ACTIVATE_SCROLL") );
             m_scrollEnabled = true;
             m_scrollTimer = 0;
             break;
           }
           case SSD1306Command::SET_CONTRAST_CONTROL_FOR_BANK0:  // 0x81
           {
-            Serial.print( F("SET_CONTRAST_CONTROL_FOR_BANK0( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_CONTRAST_CONTROL_FOR_BANK0( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::CHARGE_PUMP_SETTING:
           {
-            Serial.print( F("CHARGE_PUMP_SETTING( ") ); Serial.print( readCommandByte() == 0x10 ? F("EXTERNALVCC") : F("ENABLE_CHARGE_PUMP") ); Serial.println( F(" )" ) );
+            DebugOutput( F("CHARGE_PUMP_SETTING( ") ); DebugOutput( readCommandByte() == 0x10 ? F("EXTERNALVCC") : F("ENABLE_CHARGE_PUMP") ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_SEGMENT_REMAP:
           {
-            Serial.println( F("SET_SEGMENT_REMAP( 0 )") );
+            DebugOutputLn( F("SET_SEGMENT_REMAP( 0 )") );
             m_segmentRemap = 0;
             break;
           }
           case SSD1306Command::SET_SEGMENT_REMAP + 1:
           {
-            Serial.println( F("SET_SEGMENT_REMAP( 127 )") );
+            DebugOutputLn( F("SET_SEGMENT_REMAP( 127 )") );
             m_segmentRemap = 127;
             break;
           }
@@ -263,16 +267,16 @@ void VirtualSSD1306::processData()
           {
             m_verticalTopFixedLines = readCommandByte();
             m_verticalScrollAreaLines = readCommandByte();
-            Serial.print( F("SET_VERTICAL_SCROLL_AREA( topFixedLines = ") ); Serial.print( m_verticalTopFixedLines );
-            Serial.print( F(", scrollAreaLines = ") ); Serial.print( m_verticalScrollAreaLines );
-            Serial.println( F(" )") );
+            DebugOutput( F("SET_VERTICAL_SCROLL_AREA( topFixedLines = ") ); DebugOutput( m_verticalTopFixedLines );
+            DebugOutput( F(", scrollAreaLines = ") ); DebugOutput( m_verticalScrollAreaLines );
+            DebugOutputLn( F(" )") );
             break;
           }
           case SSD1306Command::ENTIRE_DISPLAY_ON:     // 0xA4
           case SSD1306Command::ENTIRE_DISPLAY_ON + 1: // 0xA5
           {
             // no idea what's the difference...
-            Serial.print( F("ENTIRE_DISPLAY_ON( ") ); Serial.print( command == SSD1306Command::ENTIRE_DISPLAY_ON ? F("normal") : F("forceOn") ); Serial.println( F(" )" ) );
+            DebugOutput( F("ENTIRE_DISPLAY_ON( ") ); DebugOutput( command == SSD1306Command::ENTIRE_DISPLAY_ON ? F("normal") : F("forceOn") ); DebugOutputLn( F(" )" ) );
             forceDisplayOn( command == 0xA5 );
             break;
           }
@@ -280,64 +284,64 @@ void VirtualSSD1306::processData()
           case SSD1306Command::SET_INVERSE_DISPLAY:   // 0xA7
           {
             // no idea what's the difference...
-            Serial.println( command == SSD1306Command::SET_NORMAL_DISPLAY ? F("SET_NORMAL_DISPLAY") : F("SET_INVERSE_DISPLAY") );
+            DebugOutputLn( command == SSD1306Command::SET_NORMAL_DISPLAY ? F("SET_NORMAL_DISPLAY") : F("SET_INVERSE_DISPLAY") );
             break;
           }
           case SSD1306Command::SET_MULTIPLEX_RATIO: // 0xA8
           {
-            Serial.print( F("SET_MULTIPLEX_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_MULTIPLEX_RATIO( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_DISPLAY_OFF: // 0xAE
           case SSD1306Command::SET_DISPLAY_ON:  // 0xAF
           {
             displayOn( command == SSD1306Command::SET_DISPLAY_ON );
-            Serial.println( command == SSD1306Command::SET_DISPLAY_OFF ? F("SET_DISPLAY_OFF") : F("SET_DISPLAY_ON") );
+            DebugOutputLn( command == SSD1306Command::SET_DISPLAY_OFF ? F("SET_DISPLAY_OFF") : F("SET_DISPLAY_ON") );
             break;
           }
           case SSD1306Command::SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL:  // 0xC0
           case SSD1306Command::SET_COM_OUTPUT_SCAN_DIRECTION_FLIPPED: // 0xC8
           {
-            Serial.println( command == SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL ? F("SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL") : F("SET_COM_OUTPUT_SCAN_DIRECTION_FLIPPED") );
+            DebugOutputLn( command == SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL ? F("SET_COM_OUTPUT_SCAN_DIRECTION_NORMAL") : F("SET_COM_OUTPUT_SCAN_DIRECTION_FLIPPED") );
             break;
           }
           case SSD1306Command::SET_DISPLAY_OFFSET:              // 0xD3
           {
             // read oofset parameter
             m_displayOffset = readCommandByte();
-            Serial.print( F("SET_DISPLAY_OFFSET( ") ); printHexToSerial( m_displayOffset ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_DISPLAY_OFFSET( ") ); printHexToSerial( m_displayOffset ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_DISPLAY_CLOCK_DIVIDE_RATIO:  // 0xD5
           {
-            Serial.print( F("SET_DISPLAY_CLOCK_DIVIDE_RATIO( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_DISPLAY_CLOCK_DIVIDE_RATIO( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_COM_PINS_HARDWARE_CONFIGURATION: // 0xDA,
           {
-            Serial.print( F("SET_COM_PINS_HARDWARE_CONFIGURATION( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_COM_PINS_HARDWARE_CONFIGURATION( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_PRECHARGE_PERIOD: // 0xD9
           {
-            Serial.print( F("SET_PRECHARGE_PERIOD( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_PRECHARGE_PERIOD( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_VCOMH_DESELECT_LEVEL: // 0xDB
           {
-            Serial.print( F("SET_VCOMH_DESELECT_LEVEL( ") ); printHexToSerial( readCommandByte() ); Serial.println( F(" )" ) );
+            DebugOutput( F("SET_VCOMH_DESELECT_LEVEL( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::NOP: // 0xE3
           {
-            Serial.println( F("NOP") );
+            DebugOutputLn( F("NOP") );
             break;
           }
           default:
           {
             hexdumpResetPositionCount();
-            Serial.print( F("Command = ") ); printHexToSerial( command ); Serial.print( F(" -> ") );
-            Serial.println( F("*** unknown command ***" ) );
+            Serial.print( F("Command = ") ); printHexToSerial( command );  Serial.print( F(" -> ") );
+             Serial.println( F("*** unknown command ***" ) );
             break;
           }
         }
@@ -353,8 +357,7 @@ void VirtualSSD1306::processData()
   // check for overflow/underflow
   if ( m_fifo.isOverflow() )
   {
-    Serial.println( F("*** FIFO overflow detected!" ) );
-    
+     Serial.println( F("*** FIFO overflow detected!" ) );
   }
   if ( m_fifo.isUnderflow() )
   {
