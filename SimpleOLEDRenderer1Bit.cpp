@@ -47,14 +47,14 @@ void SimpleOLEDRenderer1Bit::renderBackground()
 void SimpleOLEDRenderer1Bit::renderScreen()
 {
   // Draw random lines
-  m_pDisplay->drawLine( random( m_width ), random( m_height ), // Start X,Y
-                        random( m_width ), random( m_height ), // End X,Y
-                        random(2) ); // Color (0 or 1)
+  //m_pDisplay->drawLine( random( m_width ), random( m_height ), // Start X,Y
+  //                      random( m_width ), random( m_height ), // End X,Y
+  //                      random(2) ); // Color (0 or 1)
 
   int16_t offsetX = max( 0, ( m_width - m_pVirtualDisplay->width() * m_scaleX ) / 2 );
   int16_t offsetY = max( 0, ( m_height - m_pVirtualDisplay->height() * m_scaleY ) / 2 );
 
-  Serial.print( F("renderScreen( offsetX = ") ); Serial.print( offsetX ); Serial.print( F(", offsetY = ") ); Serial.print( offsetY ); Serial.println( F(" )") );
+  //Serial.print( F("renderScreen( offsetX = ") ); Serial.print( offsetX ); Serial.print( F(", offsetY = ") ); Serial.print( offsetY ); Serial.println( F(" )") );
 
   for ( int16_t y = 0; y < m_pVirtualDisplay->height(); y++ )
   {
@@ -63,11 +63,16 @@ void SimpleOLEDRenderer1Bit::renderScreen()
       // get pixel with optional effects (inverted, display on/off, forced on)
       auto pixelValue = m_pVirtualDisplay->getPixel( x, y );
 
-      for ( int16_t sy = 0; sy < m_scaleY; sy++ )
+      //for ( int16_t sy = 0; sy < 2; sy++ )
       {
-        for ( int16_t sx = 0; sx < m_scaleX; sx++ )
+        int sy = 0;
+        int sx = 0;
+        //for ( int16_t sx = 0; sx < 2; sx++ )
         {
-          m_pDisplay->drawPixel( m_scaleX * x + sx + offsetX, m_scaleY * y + sy + offsetY, pixelValue ? 1 : 0 );
+          int px = m_scaleX * x + sx + offsetX;
+          int py = m_scaleY * y + sy + offsetY;
+          //Serial.print( F("drawPixel( x = ") ); Serial.print( px ); Serial.print( F(", y = ") ); Serial.print( py ); Serial.println( F(" )") );
+          m_pDisplay->drawPixel(px, py, pixelValue ? 1 : 0 );
         }
       }
     }

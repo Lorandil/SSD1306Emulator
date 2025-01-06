@@ -21,7 +21,7 @@ void setup()
 
   Serial.begin( 115200 );
   
-  for ( int n = 0; n < 10; n++ )
+  for ( int n = 0; n < 5; n++ )
   {
     Serial.print( F(".") );
     delay( 1000 );
@@ -29,8 +29,8 @@ void setup()
   Serial.println();
 
   // uncomment exactly one line of the following:
-  pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
-  //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
+  //pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
+  pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
   //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
 
   // screen initilization
