@@ -8,7 +8,7 @@
 #include "VirtualSSD1306.h"
 
 // setup SSD1306 emulation layer
-VirtualSSD1306 virtualSSD1306( 128, 64, true );
+VirtualSSD1306 virtualSSD1306( 128, 64, false );
 
 // declare global rendering class pointer
 RendererBase *pRenderer{};

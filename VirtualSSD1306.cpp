@@ -102,7 +102,7 @@ void VirtualSSD1306::processData()
     {
       uint8_t command = uint8_t( value );
 
-      DebugOutput( F("Command = ") ); printHexToSerial( command ); DebugOutput( F(" -> ") );
+      DebugOutput( F("Command = ") ); if( m_enableDebugOutput ) { printHexToSerial( command ); } DebugOutput( F(" -> ") );
 
       if ( command <= SSD1306Command::SET_LOWER_COLUMN_START_ADDRESS_FOR_PAGE_ADRESSING_MODE + 15 )
       {
@@ -125,14 +125,14 @@ void VirtualSSD1306::processData()
               )
       {
         m_displayStartLine = command & 0x3F;
-        DebugOutput( F("SET_DISPLAY_START_LINE( ") ); ; printHexToSerial( m_displayStartLine ); DebugOutputLn( F(" )" ) ); 
+        DebugOutput( F("SET_DISPLAY_START_LINE( ") ); ; if( m_enableDebugOutput ) { printHexToSerial( m_displayStartLine ); } DebugOutputLn( F(" )" ) ); 
       }
       else if (    ( command >= SSD1306Command::SET_PAGE_START_ADDRESS )        // 0xB0
                 && ( command <= SSD1306Command::SET_PAGE_START_ADDRESS + 0x07 ) // 0xB7
               )
       {
         m_page = command & 0x07;
-        DebugOutput( F("SET_PAGE_START_ADDRESS( ") ); ; printHexToSerial( m_page ); DebugOutputLn( F(" )" ) );
+        DebugOutput( F("SET_PAGE_START_ADDRESS( ") ); if( m_enableDebugOutput ) { printHexToSerial( m_page ); } DebugOutputLn( F(" )" ) );
       }
       else 
       {
@@ -243,7 +243,7 @@ void VirtualSSD1306::processData()
           }
           case SSD1306Command::SET_CONTRAST_CONTROL_FOR_BANK0:  // 0x81
           {
-            DebugOutput( F("SET_CONTRAST_CONTROL_FOR_BANK0( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_CONTRAST_CONTROL_FOR_BANK0( ") ); if( m_enableDebugOutput ) { printHexToSerial( readCommandByte() ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::CHARGE_PUMP_SETTING:
@@ -289,7 +289,7 @@ void VirtualSSD1306::processData()
           }
           case SSD1306Command::SET_MULTIPLEX_RATIO: // 0xA8
           {
-            DebugOutput( F("SET_MULTIPLEX_RATIO( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_MULTIPLEX_RATIO( ") ); if( m_enableDebugOutput ) { printHexToSerial( readCommandByte() ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_DISPLAY_OFF: // 0xAE
@@ -309,27 +309,27 @@ void VirtualSSD1306::processData()
           {
             // read oofset parameter
             m_displayOffset = readCommandByte();
-            DebugOutput( F("SET_DISPLAY_OFFSET( ") ); printHexToSerial( m_displayOffset ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_DISPLAY_OFFSET( ") ); if( m_enableDebugOutput ) { printHexToSerial( m_displayOffset ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_DISPLAY_CLOCK_DIVIDE_RATIO:  // 0xD5
           {
-            DebugOutput( F("SET_DISPLAY_CLOCK_DIVIDE_RATIO( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_DISPLAY_CLOCK_DIVIDE_RATIO( ") ); if( m_enableDebugOutput ) { printHexToSerial( readCommandByte() ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_COM_PINS_HARDWARE_CONFIGURATION: // 0xDA,
           {
-            DebugOutput( F("SET_COM_PINS_HARDWARE_CONFIGURATION( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_COM_PINS_HARDWARE_CONFIGURATION( ") ); if( m_enableDebugOutput ) { printHexToSerial( readCommandByte() ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_PRECHARGE_PERIOD: // 0xD9
           {
-            DebugOutput( F("SET_PRECHARGE_PERIOD( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_PRECHARGE_PERIOD( ") ); if( m_enableDebugOutput ) { printHexToSerial( readCommandByte() ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::SET_VCOMH_DESELECT_LEVEL: // 0xDB
           {
-            DebugOutput( F("SET_VCOMH_DESELECT_LEVEL( ") ); printHexToSerial( readCommandByte() ); DebugOutputLn( F(" )" ) );
+            DebugOutput( F("SET_VCOMH_DESELECT_LEVEL( ") ); if( m_enableDebugOutput ) { printHexToSerial( readCommandByte() ); } DebugOutputLn( F(" )" ) );
             break;
           }
           case SSD1306Command::NOP: // 0xE3
@@ -341,7 +341,7 @@ void VirtualSSD1306::processData()
           {
             hexdumpResetPositionCount();
             Serial.print( F("Command = ") ); printHexToSerial( command );  Serial.print( F(" -> ") );
-             Serial.println( F("*** unknown command ***" ) );
+            Serial.println( F("*** unknown command ***" ) );
             break;
           }
         }
