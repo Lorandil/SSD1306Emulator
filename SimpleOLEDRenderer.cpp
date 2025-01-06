@@ -23,7 +23,8 @@ void SimpleOLEDRenderer::initScreen()
 {
   Serial.println( F("initScreen()") );
 
-  if (!m_pDisplay->begin()) { // Blink LED if insufficient RAM
+  if ( !m_pDisplay->begin() ) { // Blink LED if insufficient RAM
+    Serial.println( F("*** insufficient RAM!") );
     panic();
   }
 }

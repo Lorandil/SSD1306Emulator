@@ -9,8 +9,8 @@ SimpleOLEDRenderer1Bit::SimpleOLEDRenderer1Bit( VirtualDisplayBase *pVirtualDisp
 {
   Serial.println( F("c'tor") );
 
-  // 640x480 8-bit color display (to match common TFT display resolution):
-  m_pDisplay = new DVIGFX1( DVI_RES_640x480p60, false, pico_sock_cfg );
+  // 640x480 1-bit color display (to match common TFT display resolution):
+  m_pDisplay = new DVIGFX1( DVI_RES_640x480p60, false, pico_sock_cfg, VREG_VOLTAGE_1_20 );
   if ( !m_pDisplay )
   {
     Serial.println( F("*** Failed to create DVIGFX1!") );
@@ -51,14 +51,10 @@ void SimpleOLEDRenderer1Bit::renderScreen()
                         random( m_width ), random( m_height ), // End X,Y
                         random(2) ); // Color (0 or 1)
 
-  return;
-
   int16_t offsetX = max( 0, ( m_width - m_pVirtualDisplay->width() * m_scaleX ) / 2 );
   int16_t offsetY = max( 0, ( m_height - m_pVirtualDisplay->height() * m_scaleY ) / 2 );
 
   Serial.print( F("renderScreen( offsetX = ") ); Serial.print( offsetX ); Serial.print( F(", offsetY = ") ); Serial.print( offsetY ); Serial.println( F(" )") );
-
-panic();
 
   for ( int16_t y = 0; y < m_pVirtualDisplay->height(); y++ )
   {
@@ -67,11 +63,9 @@ panic();
       // get pixel with optional effects (inverted, display on/off, forced on)
       auto pixelValue = m_pVirtualDisplay->getPixel( x, y );
 
-      int16_t sy = 0;
-      //for ( int16_t sy = 0; sy < m_scaleY; sy++ )
+      for ( int16_t sy = 0; sy < m_scaleY; sy++ )
       {
-        //for ( int16_t sx = 0; sx < m_scaleX; sx++ )
-        int16_t sx = 0;
+        for ( int16_t sx = 0; sx < m_scaleX; sx++ )
         {
           m_pDisplay->drawPixel( m_scaleX * x + sx + offsetX, m_scaleY * y + sy + offsetY, pixelValue ? 1 : 0 );
         }
