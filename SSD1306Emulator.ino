@@ -21,7 +21,7 @@ void setup()
 
   Serial.begin( 115200 );
   
-  for ( int n = 0; n < 5; n++ )
+  for ( int n = 0; n < 2; n++ )
   {
     Serial.print( F(".") );
     delay( 1000 );
@@ -30,14 +30,14 @@ void setup()
 
   // uncomment exactly one line of the following:
   //pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
-  pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
-  //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
+  //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
+  pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
 
   // screen initilization
   pRenderer->initScreen();
   
   // start virtual SSD1306
-  virtualSSD1306.begin( 0x3C );
+  //virtualSSD1306.begin( 0x3C );
 
   // no overflow so far
   digitalWrite( LED_BUILTIN, false );
@@ -52,12 +52,12 @@ void loop()
 
   while ( true )
   {
-    virtualSSD1306.processData();
+    //virtualSSD1306.processData();
 
     // render the screen all 1000 cycles
     if ( ( count++ % 1000 ) == 0 )
     {
-      virtualSSD1306.performScrolling();
+      //virtualSSD1306.performScrolling();
       pRenderer->renderScreen();
     }
   }

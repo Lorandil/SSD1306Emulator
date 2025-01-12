@@ -31,6 +31,10 @@ void SimpleOLEDRenderer1Bit::initScreen()
     panic();
   }
 
+  // Randomize color palette. First entry is left black, last is set white.
+  //for (int i=1; i<255; i++) m_pDisplay->setColor(i, random(65536));
+  //m_pDisplay->setColor(255, 0xFFFF);
+
   Serial.print( F("renderScreen( width = ") ); Serial.print( m_pDisplay->width() ); Serial.print( F(", height = ") ); Serial.print( m_pDisplay->height() ); Serial.println( F(" )") );
 }
 
@@ -75,6 +79,12 @@ void SimpleOLEDRenderer1Bit::renderScreen()
           m_pDisplay->drawPixel(px, py, pixelValue ? 1 : 0 );
         }
       }
+    }
+    
+    // process the command queue after every 8th line
+    if ( ( y & 0x7 ) == 0x7 )
+    {
+      m_pVirtualDisplay->processData();
     }
   }
 }

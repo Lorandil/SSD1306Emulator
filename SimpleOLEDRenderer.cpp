@@ -51,17 +51,23 @@ void SimpleOLEDRenderer::renderScreen()
   auto invertDisplay = m_pVirtualDisplay->invertDisplay();
   auto displayOn = m_pVirtualDisplay->displayOn();
 
-  for ( int y = 0; y < 2 * SSD1306Command::DISPLAY_HEIGHT; y++ )
+  for ( int y = 0; y < 2 * m_pVirtualDisplay->height(); y++ )
   {
-    for ( int x = 0; x < 2 * SSD1306Command::DISPLAY_WIDTH; x++ )
+    for ( int x = 0; x < 2 * m_pVirtualDisplay->width(); x++ )
     {
       uint16_t offsetY = y >> 4;
-      bool pixelValue = ( ( frameBuffer[( x / 2 ) + offsetY * SSD1306Command::DISPLAY_WIDTH] & ( 1 << ( ( y / 2 ) & 0x07 ) ) ) != 0 ) | forceDisplayOn;
+      bool pixelValue = ( ( frameBuffer[( x / 2 ) + offsetY * m_pVirtualDisplay->width()] & ( 1 << ( ( y / 2 ) & 0x07 ) ) ) != 0 ) | forceDisplayOn;
       pixelValue ^= invertDisplay;
       pixelValue &= displayOn;
       m_pDisplay->drawPixel(x + 32, y + 48, pixelValue ? 0xFFFF : 0x0000 );
     }
-  }
+
+    // process the command queue after every 16th line
+    if ( ( y & 0x1f ) == 0x1f )
+    {
+      m_pVirtualDisplay->processData();
+    }
+ }
 #else
   for ( uint8_t y = 0; y < m_pVirtualDisplay->height(); y++ )
   {
@@ -78,7 +84,10 @@ void SimpleOLEDRenderer::renderScreen()
       m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 48, pixelValue ? color : 0x0000 );
       m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 49, pixelValue ? color : 0x0000 );
     }
-  }
+    
+     // process the command queue
+    m_pVirtualDisplay->processData();
+ }
 #endif
 }
  
