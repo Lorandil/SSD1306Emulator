@@ -10,7 +10,7 @@ SimpleOLEDRenderer1Bit::SimpleOLEDRenderer1Bit( VirtualDisplayBase *pVirtualDisp
   Serial.println( F("c'tor") );
 
   // 640x480 1-bit color display (to match common TFT display resolution):
-  m_pDisplay = new DVIGFX1( DVI_RES_640x480p60, false, pico_sock_cfg, VREG_VOLTAGE_1_20 );
+  m_pDisplay = new DVIGFX1( DVI_RES_640x240p60, false, pico_sock_cfg );
   if ( !m_pDisplay )
   {
     Serial.println( F("*** Failed to create DVIGFX1!") );
@@ -58,34 +58,28 @@ void SimpleOLEDRenderer1Bit::renderScreen()
   int16_t offsetX = max( 0, ( m_width - m_pVirtualDisplay->width() * m_scaleX ) / 2 );
   int16_t offsetY = max( 0, ( m_height - m_pVirtualDisplay->height() * m_scaleY ) / 2 );
 
-  //Serial.print( F("renderScreen( offsetX = ") ); Serial.print( offsetX ); Serial.print( F(", offsetY = ") ); Serial.print( offsetY ); Serial.println( F(" )") );
+ Serial.println( F("renderScreen()") );
 
-  for ( int16_t y = 0; y < m_pVirtualDisplay->height(); y++ )
+  for ( int y = 0; y < m_pVirtualDisplay->height(); y ++ )
   {
-    for ( int16_t x = 0; x < m_pVirtualDisplay->width(); x++ )
+    for ( int x = 0; x < m_pVirtualDisplay->width(); x ++ )
     {
-      // get pixel with optional effects (inverted, display on/off, forced on)
-      auto pixelValue = m_pVirtualDisplay->getPixel( x, y );
-
-      //for ( int16_t sy = 0; sy < 2; sy++ )
+      for ( int sy = 0; sy < m_scaleY; sy++ )
       {
-        int sy = 0;
-        int sx = 0;
-        //for ( int16_t sx = 0; sx < 2; sx++ )
+        for ( int sx = 0; sx < m_scaleX; sx++ )
         {
-          int px = m_scaleX * x + sx + offsetX;
-          int py = m_scaleY * y + sy + offsetY;
-          //Serial.print( F("drawPixel( x = ") ); Serial.print( px ); Serial.print( F(", y = ") ); Serial.print( py ); Serial.println( F(" )") );
-          m_pDisplay->drawPixel(px, py, pixelValue ? 1 : 0 );
+          m_pDisplay->drawPixel( x * m_scaleX + sx, y * m_scaleY + sy, m_pVirtualDisplay->getPixel( x, y ) );
         }
       }
     }
-    
+
     // process the command queue after every 8th line
     if ( ( y & 0x7 ) == 0x7 )
     {
       m_pVirtualDisplay->processData();
     }
   }
+
+  while( 1 );
 }
  

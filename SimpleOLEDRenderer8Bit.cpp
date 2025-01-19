@@ -44,7 +44,7 @@ void SimpleOLEDRenderer8Bit::renderBackground()
   {
     for ( int x = 0; x < m_pVirtualDisplay->width(); x++ )
     {
-      m_pDisplay->drawPixel( x, y, ( x + y ) & 0xff );
+      m_pDisplay->drawPixel( x, y, 0 );
     }
   }
 }
@@ -54,17 +54,23 @@ void SimpleOLEDRenderer8Bit::renderScreen()
 {
   Serial.println( F("renderScreen()") );
 
-  for ( int y = 0; y < m_pVirtualDisplay->height(); y++ )
+  for ( int y = 0; y < m_pVirtualDisplay->height(); y ++ )
   {
-    for ( int x = 0; x < m_pVirtualDisplay->width(); x++ )
+    for ( int x = 0; x < m_pVirtualDisplay->width(); x ++ )
     {
-      m_pDisplay->drawPixel( x, y, x + y );
+      for ( int sy = 0; sy < m_scaleY; sy++ )
+      {
+        for ( int sx = 0; sx < m_scaleX; sx++ )
+        {
+          m_pDisplay->drawPixel( x * m_scaleX + sx, y * m_scaleY + sy, m_pVirtualDisplay->getPixel( x, y ) );
+        }
+      }
     }
 
     // process the command queue after every 8th line
     if ( ( y & 0x7 ) == 0x7 )
     {
-      //m_pVirtualDisplay->processData();
+      m_pVirtualDisplay->processData();
     }
   }
 }
