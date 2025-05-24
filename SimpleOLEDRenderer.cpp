@@ -34,9 +34,11 @@ void SimpleOLEDRenderer::initScreen()
 /*--------------------------------------------------------------------------*/
 void SimpleOLEDRenderer::renderBackground()
 {
+  auto black = m_pDisplay->color565( 0, 0, 0 );
   auto pcbColor = m_pDisplay->color565( 32, 32, 64 );
-  auto pinColor = m_pDisplay->color565( 128, 128, 128 );
-  auto textColor = m_pDisplay->color565( 255,255,255 );
+  auto padColor = m_pDisplay->color565( 128, 128, 128 );
+  auto pinColor = m_pDisplay->color565( 192, 192, 192 );
+  auto textColor = DVIGFX16::color565( 255,255,255 );
 
   m_pDisplay->fillScreen( pcbColor );
   m_pDisplay->setTextColor( textColor );
@@ -46,7 +48,9 @@ void SimpleOLEDRenderer::renderBackground()
 
   for ( int pin = 0; pin < 4; pin++ )
   {
-    m_pDisplay->fillCircle( 80 + 48 *pin, 20, 12, pinColor );
+    m_pDisplay->fillCircle( 80 + 48 *pin, 20, 12, padColor );
+    m_pDisplay->fillCircle( 81 + 48 *pin, 21, 4, black );
+    m_pDisplay->fillCircle( 80 + 48 *pin, 20, 4, pinColor );
     m_pDisplay->setCursor( 72 + 48 * pin, 36 );
     m_pDisplay->print( strings[pin] );
   }
@@ -64,31 +68,6 @@ void SimpleOLEDRenderer::renderBackground()
 /*--------------------------------------------------------------------------*/
 void SimpleOLEDRenderer::renderScreen()
 {
-#ifdef _PACKED_PIXELS  
-  auto frameBuffer = m_pVirtualDisplay->getFrameBuffer();
-
-  auto forceDisplayOn = m_pVirtualDisplay->forceDisplayOn();
-  auto invertDisplay = m_pVirtualDisplay->invertDisplay();
-  auto displayOn = m_pVirtualDisplay->displayOn();
-
-  for ( int y = 0; y < 2 * m_pVirtualDisplay->height(); y++ )
-  {
-    for ( int x = 0; x < 2 * m_pVirtualDisplay->width(); x++ )
-    {
-      uint16_t offsetY = y >> 4;
-      bool pixelValue = ( ( frameBuffer[( x / 2 ) + offsetY * m_pVirtualDisplay->width()] & ( 1 << ( ( y / 2 ) & 0x07 ) ) ) != 0 ) | forceDisplayOn;
-      pixelValue ^= invertDisplay;
-      pixelValue &= displayOn;
-      m_pDisplay->drawPixel(x + 32, y + 48, pixelValue ? 0xFFFF : 0x0000 );
-    }
-
-    // process the command queue after every 16th line
-    if ( ( y & 0x1f ) == 0x1f )
-    {
-      m_pVirtualDisplay->processData();
-    }
- }
-#else
   for ( uint8_t y = 0; y < m_pVirtualDisplay->height(); y++ )
   {
     for ( uint8_t x = 0; x < m_pVirtualDisplay->width(); x++ )
@@ -96,18 +75,18 @@ void SimpleOLEDRenderer::renderScreen()
       // get pixel with optional effects (inverted, display on/off, forced on)
       auto pixelValue = m_pVirtualDisplay->getPixel( x, y );
       // RGB565
-      uint16_t color = ( 0x0f << 11 ) + ( 0x3f << 5 ) + ( 0x1f ); // cyan
-      //uint16_t color = ( 0x1f << 11 ) + ( 0x3f << 5 ) + ( 0x00 ); // yellow
-      //uint16_t color = 0xffff;                                    // white
-      m_pDisplay->drawPixel( 2 * x + 32, 2 * y + 48, pixelValue ? color : 0x0000 );
-      m_pDisplay->drawPixel( 2 * x + 32, 2 * y + 49, pixelValue ? color : 0x0000 );
-      m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 48, pixelValue ? color : 0x0000 );
-      m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 49, pixelValue ? color : 0x0000 );
+      //uint16_t foreground = m_pDisplay->color565( 0, 255, 255 ); // cyan
+      uint16_t foreground = m_pDisplay->color565( 255, 255, 0 ); // yellow
+      //uint16_t foreground = m_pDisplay->color565( 255, 255, 255 ); // white
+      uint16_t background = m_pDisplay->color565( 0, 0, 0 ); // black
+      m_pDisplay->drawPixel( 2 * x + 32, 2 * y + 48, pixelValue ? foreground : background );
+      m_pDisplay->drawPixel( 2 * x + 32, 2 * y + 49, pixelValue ? foreground : background );
+      m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 48, pixelValue ? foreground : background );
+      m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 49, pixelValue ? foreground : background );
     }
     
      // process the command queue
     m_pVirtualDisplay->processData();
  }
-#endif
 }
  
