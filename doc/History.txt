@@ -1,3 +1,10 @@
+2025-05-24
+Going public soon...
+* improved stability and handling of bad data packets
+* support for i2c packets of up to 1023 bytes of data
+* support for all three addressing modes
+* simple PCB background skin
+
 2024-05-31
 First version completely passing the i2c demo for the Adafruit_SSD1306 library :)
 

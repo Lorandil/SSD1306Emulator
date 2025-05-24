@@ -38,7 +38,7 @@ void SimpleOLEDRenderer::renderBackground()
   auto pcbColor = m_pDisplay->color565( 32, 32, 64 );
   auto padColor = m_pDisplay->color565( 128, 128, 128 );
   auto pinColor = m_pDisplay->color565( 192, 192, 192 );
-  auto textColor = DVIGFX16::color565( 255,255,255 );
+  auto textColor = m_pDisplay->color565( 255,255,255 );
 
   m_pDisplay->fillScreen( pcbColor );
   m_pDisplay->setTextColor( textColor );
