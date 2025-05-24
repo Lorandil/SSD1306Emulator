@@ -3,6 +3,8 @@
 #include "ssd1306commands.h"
 #include "SerialHexTools.h"
 
+//#define STOP_ON_ERROR
+
 /*--------------------------------------------------------------------------*/
 VirtualSSD1306::VirtualSSD1306( uint16_t width /*= 128*/, uint16_t height /*= 64*/, bool enableDebugOutput ) : VirtualDisplayBase( width, height, enableDebugOutput )
 {
@@ -217,6 +219,10 @@ void VirtualSSD1306::processData()
             {
               m_scrollStartPage = m_scrollEndPage;
               DebugOutput( F("*** fixed invalid start page - new m_scrollStartPage = ") ); DebugOutputLn( m_scrollStartPage );
+            #ifdef STOP_ON_ERROR
+              DebugOutputLn( F("<STOPPED>") );
+              while(1);
+            #endif
             }
             break;
           }
@@ -294,11 +300,23 @@ void VirtualSSD1306::processData()
           }
           case SSD1306Command::SET_VERTICAL_SCROLL_AREA:  // 0xA3
           {
-            m_verticalTopFixedLines = readCommandByte();
-            m_verticalScrollAreaLines = readCommandByte();
+            m_verticalTopFixedLines = readCommandByte() % m_height;
+            m_verticalScrollAreaLines = readCommandByte() % m_height;
             DebugOutput( F("SET_VERTICAL_SCROLL_AREA( topFixedLines = ") ); DebugOutput( m_verticalTopFixedLines );
             DebugOutput( F(", scrollAreaLines = ") ); DebugOutput( m_verticalScrollAreaLines );
             DebugOutputLn( F(" )") );
+            // sanity check: fixed + scroll <= m_height
+            if ( m_verticalTopFixedLines + m_verticalScrollAreaLines > m_height )
+            {
+              DebugOutputLn( F("*** Invalid scrolling area definition - scrolling disabled!") );
+            #ifdef STOP_ON_ERROR
+              DebugOutputLn( F("<STOPPED>") );
+              while(1);
+            #endif
+              // no scrolling at all!
+              m_verticalTopFixedLines = 0;
+              m_verticalScrollAreaLines = 0;
+            }
             break;
           }
           case SSD1306Command::ENTIRE_DISPLAY_ON:     // 0xA4
@@ -371,6 +389,10 @@ void VirtualSSD1306::processData()
             hexdumpResetPositionCount();
             Serial.print( F("Command = ") ); printHexToSerial( command );  Serial.print( F(" -> ") );
             Serial.println( F("*** unknown command ***" ) );
+          #ifdef STOP_ON_ERROR
+            DebugOutputLn( F("<STOPPED>") );
+            while(1);
+          #endif
             break;
           }
         }
