@@ -8,7 +8,7 @@
 #include "VirtualSSD1306.h"
 
 // setup SSD1306 emulation layer
-VirtualSSD1306 virtualSSD1306( 128, 64, false );
+VirtualSSD1306 virtualSSD1306( 128, 64, true );
 
 // declare global rendering class pointer
 RendererBase *pRenderer{};
@@ -29,18 +29,18 @@ void setup()
   Serial.println();
 
   // uncomment exactly one line of the following:
-  //pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
+  pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
   //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
-  pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 3 );
+  //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 3 );
+
+  // no overflow so far
+  digitalWrite( LED_BUILTIN, false );
 
   // screen initilization
   pRenderer->initScreen();
   
   // start virtual SSD1306
   virtualSSD1306.begin( 0x3C );
-
-  // no overflow so far
-  digitalWrite( LED_BUILTIN, false );
 }
 
 /*---------------------------------------------------------------------------*/

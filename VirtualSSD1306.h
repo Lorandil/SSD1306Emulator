@@ -3,6 +3,9 @@
 #include <Arduino.h>
 
 #define SIMPLE_FIFO_SIZE 2048
+
+#define VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE 1056 // 1024*8 pixels + some reserve bytes ;)
+
 #include "fifo.hpp"
 #include "ssd1306commands.h"
 #include "VirtualDisplayBase.h"
@@ -31,11 +34,12 @@ public:
   VirtualSSD1306( uint16_t width = 128, uint16_t height = 64, bool enableDebugOutput = false );
   virtual ~VirtualSSD1306();
 
-  void     begin( uint8_t i2cAddress = 0x3C ) override;
+  void             begin( uint8_t i2cAddress = 0x3C ) override;
 
-  uint8_t  getPixel( uint8_t x, uint8_t y ) override;
-  uint8_t *getFrameBuffer() override { return( m_pFrameBuffer ); }
-  void     processData() override;
+  uint8_t          getPixel( uint8_t x, uint8_t y ) override;
+  uint8_t         *getFrameBuffer() override { return( m_pFrameBuffer ); }
+  void             processData() override;
+  void             printDebugInfo() override;
 
   virtual void     invertDisplay( bool invertFlag ) { m_invertDisplay = invertFlag ? 0xff : 0x00; }
   virtual uint8_t  invertDisplay() { return( m_invertDisplay ); }
@@ -44,7 +48,6 @@ public:
   virtual void     displayOn( bool displayOn ) { m_displayOn = displayOn ? 0xff : 0x00; }
   virtual uint8_t  displayOn() { return( m_displayOn ); }
   virtual void     performScrolling();
-
 
 protected:
   static  void     i2cRxHandler( int numBytes );

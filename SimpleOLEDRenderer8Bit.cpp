@@ -1,6 +1,7 @@
 #include "SimpleOLEDRenderer8Bit.h"
 
 #include <PicoDVI.h> // Core display & graphics library
+#include <Adafruit_GFX.h>
 
 /*--------------------------------------------------------------------------*/
 SimpleOLEDRenderer8Bit::SimpleOLEDRenderer8Bit( VirtualDisplayBase *pVirtualDisplay, uint16_t scaleX, uint16_t scaleY )

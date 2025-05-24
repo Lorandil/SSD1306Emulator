@@ -1,6 +1,8 @@
 #include "SimpleOLEDRenderer.h"
 
 #include <PicoDVI.h> // Core display & graphics library
+#include <string>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 SimpleOLEDRenderer::SimpleOLEDRenderer( VirtualDisplayBase *pVirtualDisplay, uint16_t scaleX, uint16_t scaleY )
@@ -32,6 +34,23 @@ void SimpleOLEDRenderer::initScreen()
 /*--------------------------------------------------------------------------*/
 void SimpleOLEDRenderer::renderBackground()
 {
+  auto pcbColor = m_pDisplay->color565( 32, 32, 64 );
+  auto pinColor = m_pDisplay->color565( 128, 128, 128 );
+  auto textColor = m_pDisplay->color565( 255,255,255 );
+
+  m_pDisplay->fillScreen( pcbColor );
+  m_pDisplay->setTextColor( textColor );
+  m_pDisplay->setTextSize( 1 );
+
+  char strings[][4] = {"GND", "VCC", "SCK", "SDA"};
+
+  for ( int pin = 0; pin < 4; pin++ )
+  {
+    m_pDisplay->fillCircle( 80 + 48 *pin, 20, 12, pinColor );
+    m_pDisplay->setCursor( 72 + 48 * pin, 36 );
+    m_pDisplay->print( strings[pin] );
+  }
+  /*
   for ( int y = 0; y < m_pDisplay->height(); y++ )
   {
     for ( int x = 0; x < m_pDisplay->width(); x++ )
@@ -39,6 +58,7 @@ void SimpleOLEDRenderer::renderBackground()
       m_pDisplay->drawPixel(x, y, y * m_pDisplay->width() + x );
     }
   }
+  */
 }
 
 /*--------------------------------------------------------------------------*/

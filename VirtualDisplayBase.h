@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <Adafruit_GFX.h>
 
 class VirtualDisplayBase
 {
@@ -15,6 +16,7 @@ public:
   virtual uint8_t   getPixel( uint8_t x, uint8_t y ) = 0;
   virtual uint8_t  *getFrameBuffer() = 0;
   virtual void      processData() = 0;
+  virtual void      printDebugInfo() {}
 
   template <typename T> void DebugOutput( T value )
   {

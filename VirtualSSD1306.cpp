@@ -35,11 +35,14 @@ void VirtualSSD1306::begin( uint8_t i2cAddress )
   m_fifo.clear();
 
   Serial.println( F("Let's emulate an SSD1306...") );
+  printDebugInfo();
 
-  Serial.print( F("FIFO fill count = ") ); Serial.println( m_fifo.fillCount() );
-  Serial.print( F("FIFO free count = ") ); Serial.println( m_fifo.freeCount() );
-  Serial.print( F("isEmpty = ") ); Serial.println( m_fifo.isEmpty() );
-  Serial.print( F("isFull = ") ); Serial.println( m_fifo.isFull() );
+  // increase FIFO buffer size if supported by Wire library
+#ifdef WIRE_HAS_BUFFER_SIZE 
+  Serial.print(F("Trying to set i2c receive buffer size to ")); Serial.print( VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE );
+  auto newSize = Wire.setBufferSize( VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE );
+  Serial.print(F("... setBufferSize() returned ")); Serial.println( newSize );
+#endif
 
   // initialize I2C
   Wire.begin( i2cAddress );
@@ -141,9 +144,22 @@ void VirtualSSD1306::processData()
           case SSD1306Command::SET_MEMORY_ADDRESSING_MODE:  // 0x20
           {
             m_addressingMode = readCommandByte() & 0x03;
-            DebugOutput( F("SET_MEMORY_ADDRESSING_MODE( ") ); 
-            DebugOutput( m_addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ? F("horizontal") : ( m_addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
-            DebugOutputLn( F(" )") );
+            DebugOutput( F("SET_MEMORY_ADDRESSING_MODE( ") );
+            DebugOutput( ( m_addressingMode == SSD1306Command::HORIZONTAL_ADDRESSING_MODE ) ? F("horizontal") : ( m_addressingMode == SSD1306Command::PAGE_ADDRESSING_MODE ? F("page") : F("vertical") ) );
+            DebugOutput( F(" )") );
+
+            // reset start and end values on addressing mode change
+            m_page = 0;
+            m_pageStartAddress = 0;
+            m_pageEndAddress = ( m_height >> 3 ) - 1;
+            m_column = 0;
+            m_columnStartAddress = 0;
+            m_columnEndAddress = m_width - 1;
+
+            //DebugOutput( F(", columnStart = ") ); DebugOutput( m_columnStartAddress );
+            //DebugOutput( F(", columnEnd = ") ); DebugOutput( m_columnEndAddress );
+            //DebugOutput( F(", pageStart = ") ); DebugOutput( m_pageStartAddress );
+            //DebugOutput( F(", pageEnd = ") ); DebugOutputLn( m_pageEndAddress );
             break;
           }
           case SSD1306Command::SET_COLUMN_ADDRESS:          // 0x21
@@ -195,6 +211,13 @@ void VirtualSSD1306::processData()
             DebugOutput( F("( startPage = ") ); DebugOutput( m_scrollStartPage ); DebugOutput( F(", endPage = ") ); DebugOutput( m_scrollEndPage );
             DebugOutput( F(", interval = ") ); DebugOutput( m_scrollInterval ); DebugOutput( F(" frames, offset = ") ); DebugOutput( m_verticalScrollOffset );
             DebugOutputLn( F(" )") );
+
+            // safety check - ensure startpage <= endpage
+            if ( m_scrollStartPage > m_scrollEndPage )
+            {
+              m_scrollStartPage = m_scrollEndPage;
+              DebugOutput( F("*** fixed invalid start page - new m_scrollStartPage = ") ); DebugOutputLn( m_scrollStartPage );
+            }
             break;
           }
           case SSD1306Command::CONTINOUS_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL_SETUP: // 0x29
@@ -226,6 +249,12 @@ void VirtualSSD1306::processData()
             DebugOutput( F("( startPage = ") ); DebugOutput( m_scrollStartPage ); DebugOutput( F(", endPage = ") ); DebugOutput( m_scrollEndPage );
             DebugOutput( F(", interval = ") ); DebugOutput( m_scrollInterval ); DebugOutput( F(" frames, offset = ") ); DebugOutput( m_verticalScrollOffset );
             DebugOutputLn( F(" )") );
+            // safety check - ensure startpage <= endpage
+            if ( m_scrollStartPage > m_scrollEndPage )
+            {
+              m_scrollStartPage = m_scrollEndPage;
+              DebugOutput( F("*** fixed invalid start page - new m_scrollStartPage = ") ); DebugOutputLn( m_scrollStartPage );
+            }
             break;
           }
           case SSD1306Command::DEACTIVATE_SCROLL: // 0x2E
@@ -365,6 +394,16 @@ void VirtualSSD1306::processData()
   }
 }
 
+/*--------------------------------------------------------------------------*/
+void VirtualSSD1306::printDebugInfo()
+{
+  Serial.print( F("VirtualSSD1306( width = ") ); Serial.print( m_width ); Serial.print( F(", height = ") ); Serial.print( m_height ); Serial.println( F(" ) : ") );
+  Serial.print( F("FIFO fill count = ") ); Serial.println( m_fifo.fillCount() );
+  Serial.print( F("FIFO free count = ") ); Serial.println( m_fifo.freeCount() );
+  Serial.print( F("isEmpty = ") ); Serial.println( m_fifo.isEmpty() );
+  Serial.print( F("isFull = ") ); Serial.println( m_fifo.isFull() );
+}
+
 /*---------------------------------------------------------------------------*/
 uint8_t VirtualSSD1306::readCommandByte()
 {
@@ -403,17 +442,16 @@ uint8_t VirtualSSD1306::readDataByte()
 /*--------------------------------------------------------------------------*/
 void VirtualSSD1306::writePixels( uint8_t pixels )
 {
-#ifdef _PACKED_PIXELS  
-  // store pixels 1:1 into frame buffer
-  m_pFrameBuffer[m_column + m_page * m_width] = pixels;
-#else
   // less efficient when storing, but allows much easier handling for scrolling and rendering
   for ( uint8_t y = 0; y < 8; y++ )
   {
     // store 0xff when pixel set and 0x00 otherwise
-    m_pFrameBuffer[m_column + ( m_page * 8 + y ) * m_width] = ( pixels & ( 1 << y ) ? 0xff : 0x00 );
+    m_pFrameBuffer[uint16_t( m_column ) + uint16_t( m_page * 8 + y ) * uint16_t( m_width) ] = ( pixels & ( 1 << y ) ? 0xff : 0x00 );
   }
-#endif
+
+  //Serial.print( F("Wrote value = ") ); Serial.print( pixels );
+  //Serial.print( F("at column = ") ); Serial.print( m_column );
+  //Serial.print( F(", page = ") ); Serial.println( m_page );
 
   switch( m_addressingMode )
   {
@@ -479,6 +517,11 @@ void VirtualSSD1306::scrollHorizontal()
 {
   uint8_t startLine = m_scrollStartPage * 8;
   uint8_t endLine = ( m_scrollEndPage + 1 ) * 8;
+
+  Serial.print( F("Horizontal scolling, direction = ") ); Serial.print( m_horizontalScrollDirection );
+  Serial.print( F(", startPage = ") ); Serial.print( m_scrollStartPage );
+  Serial.print( F(", endPage = ") ); Serial.println( m_scrollEndPage );
+
 
   for ( uint8_t y = startLine; y < endLine; y++ )
   {

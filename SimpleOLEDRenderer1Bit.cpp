@@ -10,7 +10,7 @@ SimpleOLEDRenderer1Bit::SimpleOLEDRenderer1Bit( VirtualDisplayBase *pVirtualDisp
   Serial.println( F("c'tor") );
 
   // 640x480 1-bit color display (to match common TFT display resolution):
-  m_pDisplay = new DVIGFX1( DVI_RES_640x240p60, false, pico_sock_cfg );
+  m_pDisplay = new DVIGFX1( DVI_RES_320x240p60, false, pico_sock_cfg );
   if ( !m_pDisplay )
   {
     Serial.println( F("*** Failed to create DVIGFX1!") );
