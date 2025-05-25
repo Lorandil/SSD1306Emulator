@@ -68,10 +68,6 @@ Because of the relatively low resolution of the 16Bit DVI output (320x240), the 
 
 The SSD1306's with 128x64 pixels has 2:1 image format, so it's not possible to get a full screen output without hefty distortion. In practical use, the active area (zoom factor of 2 resulting in 256x192 pixels) is about 43% of the screen area.
 
-
-## Known Issues
-At the moment only the 16Bit render is fully working (`SimpleOLEDRenderer`), the 8Bit and 1Bit versions don't work correctly for unknown reasons *(ok, because I do something wrong...)*
-
 ## Future Ideas
 It would be useful to define a pin that could be used to start the data sender after the Pi Pico is up and running.
 

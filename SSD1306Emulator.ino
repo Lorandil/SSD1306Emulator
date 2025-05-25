@@ -29,10 +29,8 @@ void setup()
   }
   Serial.println();
 
-  // uncomment exactly one line of the following:
+  // create a render class
   pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
-  //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
-  //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
 
   // no overflow so far
   digitalWrite( LED_BUILTIN, false );
