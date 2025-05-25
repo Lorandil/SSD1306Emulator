@@ -31,9 +31,10 @@ void SimpleOLEDRenderer8Bit::initScreen()
     panic();
   }
 
-  // Randomize color palette. First entry is left black, last is set white.
-  for (int i=1; i<255; i++) m_pDisplay->setColor(i, random(65536));
-  m_pDisplay->setColor(255, 0xFFFF);
+  // First entry is set to black, last is set white.
+  m_pDisplay->setColor(0, 0, 0, 0);
+  m_pDisplay->setColor( 1, 0, 0, 64 );
+  m_pDisplay->setColor(255, 255, 255, 255 );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -41,13 +42,7 @@ void SimpleOLEDRenderer8Bit::renderBackground()
 {
   Serial.println( F("renderBackground()") );
 
-  for ( int y = 0; y < m_pVirtualDisplay->height(); y++ )
-  {
-    for ( int x = 0; x < m_pVirtualDisplay->width(); x++ )
-    {
-      m_pDisplay->drawPixel( x, y, 0 );
-    }
-  }
+  m_pDisplay->fillScreen( 1 );
 }
 
 /*--------------------------------------------------------------------------*/

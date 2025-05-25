@@ -48,26 +48,21 @@ void SimpleOLEDRenderer::renderBackground()
 
   for ( int pin = 0; pin < 4; pin++ )
   {
-    m_pDisplay->fillCircle( 80 + 48 *pin, 20, 12, padColor );
-    m_pDisplay->fillCircle( 81 + 48 *pin, 21, 4, black );
-    m_pDisplay->fillCircle( 80 + 48 *pin, 20, 4, pinColor );
-    m_pDisplay->setCursor( 72 + 48 * pin, 36 );
+    m_pDisplay->fillCircle( 80 + 48 *pin, 24, 12, padColor );
+    m_pDisplay->fillCircle( 81 + 48 *pin, 25, 4, black );
+    m_pDisplay->fillCircle( 80 + 48 *pin, 24, 4, pinColor );
+    m_pDisplay->setCursor( 72 + 48 * pin, 40 );
     m_pDisplay->print( strings[pin] );
   }
-  /*
-  for ( int y = 0; y < m_pDisplay->height(); y++ )
-  {
-    for ( int x = 0; x < m_pDisplay->width(); x++ )
-    {
-      m_pDisplay->drawPixel(x, y, y * m_pDisplay->width() + x );
-    }
-  }
-  */
 }
 
 /*--------------------------------------------------------------------------*/
 void SimpleOLEDRenderer::renderScreen()
 {
+  // center the output window
+  int cx = ( m_width - m_scaleX * m_pVirtualDisplay->width() ) / 2;
+  int cy = ( m_height - m_scaleY * m_pVirtualDisplay->height() ) / 2;
+
   for ( uint8_t y = 0; y < m_pVirtualDisplay->height(); y++ )
   {
     for ( uint8_t x = 0; x < m_pVirtualDisplay->width(); x++ )
@@ -79,14 +74,18 @@ void SimpleOLEDRenderer::renderScreen()
       uint16_t foreground = m_pDisplay->color565( 255, 255, 0 ); // yellow
       //uint16_t foreground = m_pDisplay->color565( 255, 255, 255 ); // white
       uint16_t background = m_pDisplay->color565( 0, 0, 0 ); // black
-      m_pDisplay->drawPixel( 2 * x + 32, 2 * y + 48, pixelValue ? foreground : background );
-      m_pDisplay->drawPixel( 2 * x + 32, 2 * y + 49, pixelValue ? foreground : background );
-      m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 48, pixelValue ? foreground : background );
-      m_pDisplay->drawPixel( 2 * x + 33, 2 * y + 49, pixelValue ? foreground : background );
+
+      // draw scaled pixel
+      for ( int sy = 0; sy < m_scaleY; sy++ )
+      {
+        for ( int sx = 0; sx < m_scaleX; sx++ )
+        {
+          m_pDisplay->drawPixel( cx + x * m_scaleX + sx, cy + y * m_scaleY + sy, pixelValue ? foreground : background );
+        }
+      }
     }
     
      // process the command queue
     m_pVirtualDisplay->processData();
- }
+  }
 }
- 

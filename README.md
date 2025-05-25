@@ -1,4 +1,7 @@
 ## SSD1306Emulator
+
+![ATtiny85 connected to SSD1306Emulator]("./images/Whole setup at work.jpg")
+
 When I discovered Luke Wren's groundbreaking PicoDVI project (https://github.com/Wren6991/PicoDVI), I was intrigued. And after my DVIsock boards arrived and I saw it working, I was impressed beyond words.
 
 I thought it would be quite cool to be able to connect a standard monitor or TV to micro controllers like the ATtiny85 instead of a tiny SSD1306 0.96"OLED.
@@ -12,9 +15,16 @@ And some time later, here I am with the SSD1306Emulator project, which allows ex
 * Complete emulation of an SSD1306 OLED display with 128x64 pixels (other resolution might follow)
 * DVI output using DVIsock
 * Support for all relevant SSD1306 commands (including scrolling)
+* Can be configured to work on any i2c address (default address is 0x3C)
 
 ## Wiring
 
+| Pi Pico (i2c slave) | i2c master          |
+|:--------------------|:--------------------|
+| 3V3(OUT) (pin 36)   | maybe VCC (if 3.3V) |
+| GND (e.g. pin 38)   | GND                 |
+| I2C0 SCL (pin 7)    | SCL                 |
+| I2C0 SDA (pin 6)    | SDA                 |
 
 
 ## Implementation

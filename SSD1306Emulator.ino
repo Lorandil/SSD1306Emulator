@@ -21,6 +21,7 @@ void setup()
 
   Serial.begin( 115200 );
   
+  // give the Pico and the OS some time to establish a serial connection
   for ( int n = 0; n < 2; n++ )
   {
     Serial.print( F(".") );
@@ -31,7 +32,7 @@ void setup()
   // uncomment exactly one line of the following:
   pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
   //pRenderer = new SimpleOLEDRenderer1Bit( &virtualSSD1306, 2, 2 );
-  //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 3 );
+  //pRenderer = new SimpleOLEDRenderer8Bit( &virtualSSD1306, 2, 2 );
 
   // no overflow so far
   digitalWrite( LED_BUILTIN, false );
@@ -40,7 +41,7 @@ void setup()
   pRenderer->initScreen();
   
   // start virtual SSD1306
-  virtualSSD1306.begin( 0x3C );
+  virtualSSD1306.begin( SSD1306_I2C_DEFAULT_ADDRESS );
 }
 
 /*---------------------------------------------------------------------------*/

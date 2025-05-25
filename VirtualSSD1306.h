@@ -6,6 +6,8 @@
 
 #define VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE 1056 // 1024*8 pixels + some reserve bytes ;)
 
+#define SSD1306_I2C_DEFAULT_ADDRESS 0x3C
+
 #include "fifo.hpp"
 #include "ssd1306commands.h"
 #include "VirtualDisplayBase.h"
@@ -34,7 +36,7 @@ public:
   VirtualSSD1306( uint16_t width = 128, uint16_t height = 64, bool enableDebugOutput = false );
   virtual ~VirtualSSD1306();
 
-  void             begin( uint8_t i2cAddress = 0x3C ) override;
+  void             begin( uint8_t i2cAddress = SSD1306_I2C_DEFAULT_ADDRESS ) override;
 
   uint8_t          getPixel( uint8_t x, uint8_t y ) override;
   uint8_t         *getFrameBuffer() override { return( m_pFrameBuffer ); }

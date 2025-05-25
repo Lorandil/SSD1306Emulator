@@ -19,7 +19,7 @@ Software:
 
 Hardware:
 ---------
-* add a (solid state) relay to power on the I2C master after the PI pico is ready
+* add a (solid state) relay to power on the I2C master after the Pi Pico is ready
 
 TinyJoypad:
 -----------
