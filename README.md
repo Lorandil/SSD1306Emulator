@@ -1,13 +1,13 @@
 ## SSD1306Emulator
 
-![ATtiny85 connected to SSD1306Emulator]("./images/Whole setup at work.jpg")
-
 When I discovered Luke Wren's groundbreaking PicoDVI project (https://github.com/Wren6991/PicoDVI), I was intrigued. And after my DVIsock boards arrived and I saw it working, I was impressed beyond words.
 
 I thought it would be quite cool to be able to connect a standard monitor or TV to micro controllers like the ATtiny85 instead of a tiny SSD1306 0.96"OLED.
 
-And some time later, here I am with the SSD1306Emulator project, which allows exactly that!
-
+And some time later, here I am with the SSD1306Emulator project, which allows exactly that:
+![ATtiny85 output on DVI Monitor](https://github.com/Lorandil/SSD1306Emulator/blob/main/images/Emulator_Ouput_(captured_with_HDMI_grabber).jpg)
+<br>
+I2C output from an ATtiny85 displayed on a DVI Monitor *(for convenience using a cheap HDMI grabber)*
 
 ## Features
 
