@@ -5,6 +5,8 @@
 #include "SimpleOLEDRenderer.h"
 #include "VirtualSSD1306.h"
 
+//#define DIAGNOSTIC_BOOT
+
 // setup SSD1306 emulation layer
 VirtualSSD1306 virtualSSD1306( 128, 64, true );
 
@@ -18,7 +20,8 @@ void setup()
   digitalWrite( LED_BUILTIN, true );
 
   Serial.begin( 115200 );
-  
+
+#ifdef DIAGNOSTIC_BOOT
   // give the Pico and the OS some time to establish a serial connection
   for ( int n = 0; n < 2; n++ )
   {
@@ -26,6 +29,10 @@ void setup()
     delay( 1000 );
   }
   Serial.println();
+#else
+  // start virtual SSD1306 early
+  virtualSSD1306.begin( SSD1306_I2C_DEFAULT_ADDRESS );
+#endif
 
   // create a render class
   pRenderer = new SimpleOLEDRenderer( &virtualSSD1306, 2, 2 );
@@ -35,9 +42,11 @@ void setup()
 
   // screen initilization
   pRenderer->initScreen();
-  
-  // start virtual SSD1306
+
+#ifdef DIAGNOSTIC_BOOT
+  // start virtual SSD1306 later, so that serial output will be visible
   virtualSSD1306.begin( SSD1306_I2C_DEFAULT_ADDRESS );
+#endif
 }
 
 /*---------------------------------------------------------------------------*/

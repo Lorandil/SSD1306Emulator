@@ -36,14 +36,17 @@ void VirtualSSD1306::begin( uint8_t i2cAddress )
   // clear FIFO
   m_fifo.clear();
 
-  Serial.println( F("Let's emulate an SSD1306...") );
+  Serial.print( F("Let's emulate an SSD1306 on address 0x") ); Serial.print( i2cAddress, HEX ); Serial.println( F("...") );
   printDebugInfo();
 
   // increase FIFO buffer size if supported by Wire library
 #ifdef WIRE_HAS_BUFFER_SIZE 
-  Serial.print(F("Trying to set i2c receive buffer size to ")); Serial.print( VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE );
+  Serial.print(F("Trying to set i2c receive buffer size to ")); Serial.println( VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE );
   auto newSize = Wire.setBufferSize( VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE );
-  Serial.print(F("... setBufferSize() returned ")); Serial.println( newSize );
+  if ( newSize != VIRTUAL_SSD1306_RECEIVE_FIFO_BUFFER_SIZE )
+  {
+    Serial.print( F("*** setBufferSize() failed and returned a buffer size of ") ); Serial.print( newSize ); Serial.println( F(" bytes instead!") );
+  }
 #endif
 
   // initialize I2C
@@ -419,11 +422,11 @@ void VirtualSSD1306::processData()
 /*--------------------------------------------------------------------------*/
 void VirtualSSD1306::printDebugInfo()
 {
-  Serial.print( F("VirtualSSD1306( width = ") ); Serial.print( m_width ); Serial.print( F(", height = ") ); Serial.print( m_height ); Serial.println( F(" ) : ") );
-  Serial.print( F("FIFO fill count = ") ); Serial.println( m_fifo.fillCount() );
-  Serial.print( F("FIFO free count = ") ); Serial.println( m_fifo.freeCount() );
-  Serial.print( F("isEmpty = ") ); Serial.println( m_fifo.isEmpty() );
-  Serial.print( F("isFull = ") ); Serial.println( m_fifo.isFull() );
+  Serial.print( F("VirtualSSD1306( width = ") ); Serial.print( m_width ); Serial.print( F(", height = ") ); Serial.print( m_height ); Serial.println( F(" )") );
+  Serial.print( F("  FIFO fill count = ") ); Serial.println( m_fifo.fillCount() );
+  Serial.print( F("  FIFO free count = ") ); Serial.println( m_fifo.freeCount() );
+  Serial.print( F("  isEmpty = ") ); Serial.println( m_fifo.isEmpty() );
+  Serial.print( F("  isFull = ") ); Serial.println( m_fifo.isFull() );
 }
 
 /*---------------------------------------------------------------------------*/
