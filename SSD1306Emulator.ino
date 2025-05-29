@@ -3,8 +3,6 @@
 * 2024-07-21 Lorandil
 */
 #include "SimpleOLEDRenderer.h"
-#include "SimpleOLEDRenderer1Bit.h"
-#include "SimpleOLEDRenderer8Bit.h"
 #include "VirtualSSD1306.h"
 
 // setup SSD1306 emulation layer
