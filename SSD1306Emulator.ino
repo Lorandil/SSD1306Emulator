@@ -1,11 +1,17 @@
 /*
 * SSD1306Emulator - a simple emulator to render data intended for an SSD1306 to DVI using PicoDVI
-* 2024-07-21 Lorandil
+* 2024-2025 Lorandil
 */
+
+#include "SimpleOLEDRenderer1Bit.h"
+#include "SimpleOLEDRenderer8Bit.h"
 #include "SimpleOLEDRenderer.h"
 #include "VirtualSSD1306.h"
 
-//#define DIAGNOSTIC_BOOT
+#define DIAGNOSTIC_BOOT
+
+// pin to turn on the i2c master after the emulator is ready to receive data
+#define MASTER_ENABLE_PIN 22
 
 // setup SSD1306 emulation layer
 VirtualSSD1306 virtualSSD1306( 128, 64, true );
@@ -46,6 +52,20 @@ void setup()
 #ifdef DIAGNOSTIC_BOOT
   // start virtual SSD1306 later, so that serial output will be visible
   virtualSSD1306.begin( SSD1306_I2C_DEFAULT_ADDRESS );
+#endif
+
+#ifdef MASTER_ENABLE_PIN
+  Serial.print(F("Starting i2c master") );
+  for ( int n = 0; n < 3; n++ )
+  {
+    Serial.print( F(".") );
+    delay( 100 );
+  }
+  Serial.println();
+
+  // Power on i2c master
+  pinMode( MASTER_ENABLE_PIN, OUTPUT );
+  digitalWrite( MASTER_ENABLE_PIN, true );
 #endif
 }
 
